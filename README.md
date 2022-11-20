@@ -1,0 +1,2 @@
+# lrbot
+## A Discord bot
