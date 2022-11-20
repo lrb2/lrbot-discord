@@ -1,1 +1,5 @@
+/latex/requests/
+__pycache__/
 secret-*
+*.log
+magick
