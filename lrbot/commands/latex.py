@@ -1,7 +1,7 @@
 import discord
 import glob
 import lrbot
-from os import mkdir, path
+from os import mkdir, path, remove
 from shutil import rmtree
 import subprocess
 
@@ -133,6 +133,10 @@ def createFile(filePath, code, template = None, extraPackages = None):
     '''
     Creates a .tex file using the given code, template, and packages.
     '''
+    # Remove the file if it already exists (such as for applying a template to a file)
+    if path.exists(filePath):
+        remove(filePath)
+
     file = open(filePath, 'a')
 
     if template is not None:
