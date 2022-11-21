@@ -1,4 +1,4 @@
-from emoji import UNICODE_EMOJI_ENGLISH
+from emoji import is_emoji
 
 async def sendResponse(recipient, text = None, files = None, reference = None):
     '''
@@ -9,6 +9,12 @@ async def sendResponse(recipient, text = None, files = None, reference = None):
     if filesIsList and len(files) < 2:
         files = files[0]
         filesIsList = False
+    
+    # Max. 10 attachments per message
+    filesQueued = None
+    if filesIsList and len(files) > 10:
+        filesQueued = files[10:]
+        files = files[:9]
 
     if filesIsList:
         await recipient.send(
@@ -22,6 +28,10 @@ async def sendResponse(recipient, text = None, files = None, reference = None):
             file = files,
             reference = reference,
         )
+    
+    # Send any excess attachments as another message
+    if filesQueued:
+        await sendResponse(recipient, text, filesQueued, reference)
 
 async def reactToMessage(reference, reaction = 'failure'):
     '''
@@ -33,9 +43,9 @@ async def reactToMessage(reference, reaction = 'failure'):
         case 'success' | 'ok':
             emoji = '✅'
     
-    if reaction in UNICODE_EMOJI_ENGLISH:
+    if is_emoji(reaction):
         emoji = reaction
-    else:
+    elif emoji is None:
         return
 
     await reference.add_reaction(emoji)

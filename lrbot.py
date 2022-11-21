@@ -1,6 +1,7 @@
 import discord
 import logging
-import lrbot
+import lrbot.response
+import lrbot.commands.latex
 
 intents = discord.Intents.none()
 intents.messages = True
@@ -16,20 +17,19 @@ prefix = '~'
 
 @client.event
 async def on_message(message):
+    if not len(message.content):
+        return
     if message.content[0] != prefix:
         return
     if message.author == client.user:
         return
     
-    command = message.content.split(' ',1)[0][1:]
+    command = message.content.split(' ',1)[0][1:].lower()
 
     match command:
         case 'latex':
             # Run latex.py
             await lrbot.commands.latex.run(message)
-            return
-        case 'hello':
-            await message.channel.send('Hello!')
             return
         case _:
             return
@@ -37,6 +37,6 @@ async def on_message(message):
 logger = logging.FileHandler(filename='lrbot.log', encoding='utf-8', mode='w')
 
 f = open('secret-token')
-token = f.read()
+token = f.readline().strip()
 f.close()
 client.run(token, log_handler = logger)
