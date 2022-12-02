@@ -150,7 +150,7 @@ def createFile(filePath, code, template = None, extraPackages = None):
         templateFile = open(f'latex/templates/{template}/{template}-packages')
         packages = []
         for package in templateFile:
-            packages.append(package)
+            packages.append(package.rstrip())
         templateFile.close()
         # Add extra packages, without duplicates
         packages = list(set(packages + extraPackages))
