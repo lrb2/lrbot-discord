@@ -86,8 +86,7 @@ async def main(message: discord.Message) -> None:
         generateFile(fm, source, code, template, extraPackages)
 
     # Run the LaTeX interpreter to generate a PDF
-    #subprocess.call(['xelatex', '-interaction=batchmode', sourcePath, '-o', sourceBase + '.pdf'])
-    subprocess.call([
+    subprocess.run([
         'xelatex',
         '-interaction=batchmode',
         '--output-directory=' + fm.getOutputFolder(),
@@ -96,9 +95,9 @@ async def main(message: discord.Message) -> None:
 
     if not pdfOnly:
         # Use ImageMagick to convert the output to one or more images
-        sourceOutput = source[:-4] + '.pdf'
-        imgOutput = source[:-4] + '.png'
-        subprocess.call([
+        sourceOutput = os.path.splitext(source)[0] + '.pdf'
+        imgOutput = os.path.splitext(source)[0] + '.png'
+        subprocess.run([
             './magick',
             '-density', str(density),
             fm.getFilePath(sourceOutput, output=True),
