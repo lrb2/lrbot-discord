@@ -103,7 +103,7 @@ async def main(message):
 
     # Run the LaTeX interpreter to generate a PDF
     #subprocess.call(['xelatex', '-interaction=batchmode', sourcePath, '-o', sourceBase + '.pdf'])
-    subprocess.call(['xelatex', '-interaction=batchmode', '--output-directory=' + folder, sourcePath])
+    subprocess.call(['xelatex', '-interaction=batchmode', '--output-directory=' + folder, sourcePath], timeout=120)
 
     files = None
 
@@ -111,7 +111,7 @@ async def main(message):
         files = [discord.File(sourceBase + '.pdf')]
     else:
         # Use ImageMagick to convert the output to one or more images
-        subprocess.call(['./magick', '-density', str(density), sourceBase + '.pdf', '-colorspace', 'rgb', '-trim', '+repage', sourceBase + '.png'])
+        subprocess.call(['./magick', '-density', str(density), sourceBase + '.pdf', '-colorspace', 'rgb', '-trim', '+repage', sourceBase + '.png'], timeout=120)
 
         # Get all output images
         output = glob.glob(source[:-4] + "*.png", root_dir = folder)
