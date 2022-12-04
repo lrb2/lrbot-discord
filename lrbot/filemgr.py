@@ -115,7 +115,6 @@ class FileManager:
             for file in message.attachments:
                 await file.save(self.folder + os.sep + file.filename)
                 self.attachments.append(file.filename)
-        print("OK")
         return self.attachments
     
     def getOutputFiles(self) -> list[os.PathLike]:
