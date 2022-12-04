@@ -1,11 +1,10 @@
 import discord
-import glob
-import lrbot
-from os import mkdir, path, remove
-from shutil import rmtree
+import lrbot.response
+import os
+from lrbot.filemgr import FileManager
 import subprocess
 
-async def main(message):
+async def main(message: discord.Message) -> None:
     args = message.content.lower().split()
 
     if len(args) < 2:
@@ -15,7 +14,7 @@ async def main(message):
     # Get template to use
     if args[1] == 'raw':
         template = None
-    elif path.exists('latex/templates/' + args[1] + '/'):
+    elif os.path.exists('latex/templates/' + args[1] + '/'):
         template = args[1]
     else:
         await lrbot.response.reactToMessage(message, 'fail')
@@ -51,9 +50,6 @@ async def main(message):
 
     # All remaining content is LaTeX
     # Check for LaTeX content, either in content or attachment
-
-    attachments = message.attachments
-
     code = None
     if codeIndex:
         # Text content exists
@@ -62,7 +58,7 @@ async def main(message):
     else:
         # An attachment must include LaTeX code
         # For now, require that it have the .tex extension
-        for file in attachments:
+        for file in message.attachments:
             if file.filename.lower().endswith('.tex'):
                 # A suitable file has been found
                 source = file.filename
@@ -76,68 +72,84 @@ async def main(message):
     await lrbot.response.reactToMessage(message, 'success')
 
     # Save the message code and files
-    folder = 'latex/requests/' + str(message.id) + '/'
-    mkdir(folder)
-
-    # Try attachments first (more likely to fail)
-    try:
-        async with message.channel.typing():
-            for file in attachments:
-                await file.save(folder + file.filename)
-    except:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
-    
-    sourcePath = folder + source
-    sourceBase = sourcePath[:-4]
+    fm = FileManager(message.id)
+    attachments = await fm.saveMessageAttachments(message)
 
     # Can add template to code in file if desired
     if template and source and code is None:
-        sourceFile = open(sourcePath)
+        sourceFile = fm.openFile(source)
         code = sourceFile.read()
         sourceFile.close
 
     if code is not None:
         # Create the LaTeX file from the message content code
-        createFile(sourcePath, code, template, extraPackages)
+        generateFile(fm, source, code, template, extraPackages)
 
     # Run the LaTeX interpreter to generate a PDF
     #subprocess.call(['xelatex', '-interaction=batchmode', sourcePath, '-o', sourceBase + '.pdf'])
-    subprocess.call(['xelatex', '-interaction=batchmode', '--output-directory=' + folder, sourcePath], timeout=120)
+    subprocess.call([
+        'xelatex',
+        '-interaction=batchmode',
+        '--output-directory=' + fm.getOutputFolder(),
+        fm.getFilePath(source)
+    ], timeout=120)
 
-    files = None
-
-    if pdfOnly:
-        files = [discord.File(sourceBase + '.pdf')]
-    else:
+    if not pdfOnly:
         # Use ImageMagick to convert the output to one or more images
-        subprocess.call(['./magick', '-density', str(density), sourceBase + '.pdf', '-colorspace', 'rgb', '-trim', '+repage', sourceBase + '.png'], timeout=120)
+        sourceOutput = source[:-4] + '.pdf'
+        imgOutput = source[:-4] + '.png'
+        subprocess.call([
+            './magick',
+            '-density', str(density),
+            fm.getFilePath(sourceOutput, output=True),
+            '-colorspace', 'rgb',
+            '-trim',
+            '+repage',
+            os.path.join(os.sep, fm.getOutputFolder(), imgOutput)
+        ], timeout=120)
 
-        # Get all output images
-        output = glob.glob(source[:-4] + "*.png", root_dir = folder)
+    outputFiles = fm.getOutputFiles()
+    files = []
 
-        if len(output):
-            files = []
-            for outputPath in output:
-                files.append(discord.File(folder + outputPath))
+    excludedExts = ['aux','log']
+    if not pdfOnly:
+        excludedExts.append('pdf')
+
+    for file in outputFiles:
+        ext = os.path.splitext(file)[1][1:].lower()
+        
+        # Skip unwanted files
+        if ext in excludedExts:
+            continue
+
+        filePath = os.path.join(os.sep, fm.getOutputFolder(), file)
+        files.append(discord.File(filePath))
 
     # Compose the message
-    await lrbot.response.sendResponse(message.channel, files = files, reference = message)
+    await lrbot.response.sendResponse(
+        message.channel,
+        files = files,
+        reference = message
+    )
 
     # Delete the folder
-    clean(message.id)
+    fm.clean()
 
     return
 
-def createFile(filePath, code, template = None, extraPackages = None):
+def generateFile(
+    fm: FileManager,
+    filename: str,
+    code: str,
+    template: str = None,
+    extraPackages: list[str] = None
+) -> None:
     '''
     Creates a .tex file using the given code, template, and packages.
     '''
     # Remove the file if it already exists (such as for applying a template to a file)
-    if path.exists(filePath):
-        remove(filePath)
-
-    file = open(filePath, 'a')
+    
+    file = fm.createFile(filename)
 
     if template is not None:
         # Add head
@@ -158,7 +170,7 @@ def createFile(filePath, code, template = None, extraPackages = None):
         for package in packages:
             # Check if the package requires predefined code
             packagePath = f'latex/packages/{package}.tex'
-            if path.exists(packagePath):
+            if os.path.exists(packagePath):
                 packageFile = open(packagePath)
                 file.write(packageFile.read())
                 packageFile.close()
@@ -181,20 +193,13 @@ def createFile(filePath, code, template = None, extraPackages = None):
         file.write(code)
     
     file.close()
+    return
 
-def clean(id):
-    '''
-    Removes the folder created during the LaTeX process, if present.
-    '''
-    folder = 'latex/requests/' + str(id) + '/'
-    if path.exists(folder):
-        rmtree(folder)
-
-async def run(message):
+async def run(message: discord.Message) -> None:
     try:
         await main(message)
     except:
         # Clean up any created files
-        clean(message.id)
+        FileManager(message.id, reinit=True).clean()
         await lrbot.response.reactToMessage(message, '💣')
-        return
+    return
