@@ -1,0 +1,12 @@
+Automatically crops blank edges from an image and can remove a white background.
+`$crop [trans|transparent] [dpi=600]`
+An attached file must be provided. All files supported by ImageMagick are allowed, including PDFs.
+The output is currently always PNG file(s).
+
+**Options**
+`trans` or `transparent` Make pure white areas of the image transparent.
+`dpi=600` Set a custom DPI (resolution) for image output.
+
+**Examples**
+`$crop` (file attached)
+`$crop trans dpi=96` (file attached)

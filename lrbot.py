@@ -1,9 +1,9 @@
 import discord
 import logging
 import lrbot.response
+import lrbot.commands.crop
 import lrbot.commands.help
 import lrbot.commands.latex
-import lrbot.commands.magick
 
 intents = discord.Intents.none()
 intents.messages = True
@@ -37,9 +37,9 @@ async def on_message(message: discord.Message) -> None:
             # Run latex.py
             await lrbot.commands.latex.run(message)
             return
-        case 'magick':
-            # Run magick.py
-            await lrbot.commands.magick.run(message)
+        case 'crop':
+            # Run crop.py
+            await lrbot.commands.crop.run(message)
             return
         case _:
             return
