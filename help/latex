@@ -8,11 +8,11 @@ Templates provide preset packages and LaTeX code to surround the provided code. 
 See https://github.com/lrb2/lrbot-discord/tree/master/latex/templates for details about each template.
 
 **Options**
-`dpi=600` Set a custom DPI (resolution) for image output.
+`dpi=300` Set a custom DPI (resolution) for image output.
 `packages=` When using a template, use additional packages (comma-separated, no spaces). Some packages may use special options; see https://github.com/lrb2/lrbot-discord/tree/master/latex/packages for details.
 `pdf` Return a PDF instead of images.
 
 **Examples**
 `$latex equation \frac{3x}{2}`
-`$latex document packages=nth dpi=300 The \nth{2} example.`
+`$latex document packages=nth dpi=600 The \nth{2} example.`
 `$latex raw pdf \documentclass{article} ...`
