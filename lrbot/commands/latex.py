@@ -98,7 +98,7 @@ async def main(message: discord.Message) -> None:
         sourceOutput = os.path.splitext(source)[0] + '.pdf'
         imgOutput = os.path.splitext(source)[0] + '.png'
         subprocess.run([
-            './magick',
+            'magick',
             '-density', str(density),
             fm.getFilePath(sourceOutput, output=True),
             '-colorspace', 'rgb',

@@ -1,0 +1,8 @@
+version: '3.9'
+name: lrbot-discord
+services:
+  main:
+    build: .
+    volumes:
+      - .:/code
+    restart: always

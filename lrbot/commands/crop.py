@@ -33,7 +33,7 @@ async def main(message: discord.Message) -> None:
     for attachment in attachments:
         # Test if the file is processable
         if subprocess.run([
-            './magick',
+            'magick',
             'identify',
             '-regard-warnings',
             fm.getFilePath(attachment)
@@ -42,7 +42,7 @@ async def main(message: discord.Message) -> None:
             continue
 
         magick = [
-            './magick',
+            'magick',
             '-density', str(density),
             fm.getFilePath(attachment),
             '-colorspace', 'rgb',
