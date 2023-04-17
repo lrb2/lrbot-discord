@@ -25,7 +25,7 @@ WORKDIR /usr/local/bin
 #    e. Add a soft link to run ImageMagick
 RUN ln -s magick.d/squashfs-root/AppRun magick
 ## 4. Install discord.py and emoji packages
-RUN pip install "discord.py>=2.2.0" emoji
+RUN pip install "discord.py>=2.2.0" requests emoji
 ## 5. Set working directory
 WORKDIR /code
 ## 6. Copy files (will be overwritten by mount)

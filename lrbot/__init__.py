@@ -1,1 +1,1 @@
-__all__ = ['commands','response']
+__all__ = ['commands', 'filemgr', 'location', 'response']
