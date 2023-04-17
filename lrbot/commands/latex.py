@@ -8,6 +8,7 @@ async def main(message: discord.Message) -> None:
     args = message.content.lower().split()
 
     if len(args) < 2:
+        await lrbot.response.reactToMessage(message, 'fail')
         return
 
     # First argument
