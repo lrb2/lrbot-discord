@@ -41,6 +41,6 @@ async def run(message: discord.Message) -> None:
     await lrbot.response.sendResponse(
         message.channel,
         reference = message,
-        embed = helpEmbed
+        embeds = [helpEmbed]
     )
     return

@@ -6,7 +6,7 @@ async def sendResponse(
     text: str = None,
     files: list[discord.File] = None,
     reference: discord.Message = None,
-    embed: discord.Embed = None
+    embeds: list[discord.Embed] = None
 ) -> None:
     '''
     Sends a message to the recipient entity (Messageable) (channel, user, etc.) including text and/or files.
@@ -22,25 +22,31 @@ async def sendResponse(
     if filesIsList and len(files) > 10:
         filesQueued = files[10:]
         files = files[:9]
+    
+    # Max. 10 embeds per message
+    embedsQueued = None
+    if len(embeds) > 10:
+        embedsQueued = embeds[10:]
+        embeds = embeds[:9]
 
     if filesIsList:
         await recipient.send(
             content = text,
             files = files,
             reference = reference,
-            embed = embed
+            embeds = embeds
         )
     else:
         await recipient.send(
             content = text,
             file = files,
             reference = reference,
-            embed = embed
+            embeds = embeds
         )
     
     # Send any excess attachments as another message
-    if filesQueued:
-        await sendResponse(recipient, text, filesQueued, reference)
+    if filesQueued or embedsQueued:
+        await sendResponse(recipient, text, filesQueued, reference, embedsQueued)
 
 async def reactToMessage(
     reference: discord.Message,
