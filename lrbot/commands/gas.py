@@ -36,7 +36,7 @@ gasTypeProducts = {
     12: 'e15',
 }
 
-maxStations = 20
+maxStations = 15
 
 delimsPrimary = [';', '&', 'and']
 delimsSecondary = [',']
@@ -389,8 +389,8 @@ async def main(message: discord.Message) -> None:
         gasStationsStrict.sort(key=operator.itemgetter('price'))
         gasStationsNearby.sort(key=operator.itemgetter('price'))
         # Keep only the lowest stations
-        del gasStationsStrict[maxStations-1:]
-        del gasStationsNearby[maxStations-1:]
+        del gasStationsStrict[maxStations:]
+        del gasStationsNearby[maxStations:]
         
         embedStrictTitle = gasTypes[gasType] + ' Prices In ' + ' and '.join(gasLocations)
         embedStrictColor = discord.Color.from_str('#dc4f41')
@@ -404,7 +404,7 @@ async def main(message: discord.Message) -> None:
             embedStrictDesc += f'{gasStation["price"]:.2f}`'
             embedStrictDesc += ' | ' + gasStation['name']
             embedStrictDesc += ' @ ' + gasStation['address']
-            embedStrictDesc += f' *({gasStation["rating"]:.1f}/5★)*\n'
+            embedStrictDesc += f' *({gasStation["rating"]:.1f}/5☆)*\n'
         embedStrictDesc += '*Only stations with known prices shown, up to ' + str(maxStations) + '. Data from GasBuddy*'
         gasEmbedStrict = discord.Embed(title = embedStrictTitle, description = embedStrictDesc, color = embedStrictColor)
         
@@ -420,7 +420,7 @@ async def main(message: discord.Message) -> None:
             embedNearbyDesc += f'{gasStation["price"]:.2f}`'
             embedNearbyDesc += ' | ' + gasStation['name']
             embedNearbyDesc += ' @ ' + gasStation['address']
-            embedNearbyDesc += f' *({gasStation["rating"]:.1f}/5★)*\n'
+            embedNearbyDesc += f' *({gasStation["rating"]:.1f}/5☆)*\n'
         embedNearbyDesc += '*Only stations with known prices shown, up to ' + str(maxStations) + '. Data from GasBuddy*'
         gasEmbedNearby = discord.Embed(title = embedNearbyTitle, description = embedNearbyDesc, color = embedNearbyColor)
         
