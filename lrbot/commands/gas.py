@@ -36,7 +36,7 @@ gasTypeProducts = {
     12: 'e15',
 }
 
-maxStations = 15
+maxStations = 10
 
 delimsPrimary = [';', '&', 'and']
 delimsSecondary = [',']
