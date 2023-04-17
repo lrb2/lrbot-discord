@@ -383,13 +383,14 @@ async def main(message: discord.Message) -> None:
         # Remove duplicates in each set (https://stackoverflow.com/a/9427216)
         gasStationsStrict = [dict(t) for t in {tuple(d.items()) for d in gasStationsStrict}]
         gasStationsNearby = [dict(t) for t in {tuple(d.items()) for d in gasStationsNearby}]
-        # Remove elements in Strict from Nearby
-        gasStationsNearby = [station for station in gasStationsNearby if station not in gasStationsStrict]
         # Sort all stations by price
         gasStationsStrict.sort(key=operator.itemgetter('price'))
         gasStationsNearby.sort(key=operator.itemgetter('price'))
-        # Keep only the lowest stations
+        # Keep only the lowest stations in Strict
         del gasStationsStrict[maxStations:]
+        # Remove elements that are still in Strict from Nearby
+        gasStationsNearby = [station for station in gasStationsNearby if station not in gasStationsStrict]
+        # Keep only the lowest stations in Nearby
         del gasStationsNearby[maxStations:]
         
         embedStrictTitle = gasTypes[gasType] + ' Prices In ' + ' and '.join(gasLocations)

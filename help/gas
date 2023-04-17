@@ -1,6 +1,7 @@
 Returns the lowest known gas prices in and near the provided locations.
 `$gas [type] locations`
 All parameters are case insensitive.
+Gas prices will be returned as two categories: `In` or `Near` the specified locations. `In` is limited to the exact location provided, while `Near` includes gas stations in nearby cities as well as any other stations in the specified location not listed in `In` if the price is low enough.
 One or more locations may be specified by city and state or ZIP code. States may be specified by full name (`Illinois`), initials (`IL`), or abbreviation (`Ill.`). State abbreviations must end in a period. If no state is found, the default state of Illinois will be used.
 Most ways of stating multiple locations should be understood correctly, but the more unreasonable the format, the less likely the interpretation will be correct. For least ambiguity, separate locations using `;`, `and`, or `&`, and use `,` to separate city and state. However, spaces and other combinations will likely work as well.
 
