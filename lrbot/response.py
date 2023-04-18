@@ -25,7 +25,7 @@ async def sendResponse(
     
     # Max. 10 embeds per message
     embedsQueued = None
-    if len(embeds) > 10:
+    if embeds is not None and len(embeds) > 10:
         embedsQueued = embeds[10:]
         embeds = embeds[:9]
 
