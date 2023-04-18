@@ -1,8 +1,8 @@
+import asyncio
 import discord
 import lrbot.response
 import os
 from lrbot.filemgr import FileManager
-import subprocess
 
 async def main(message: discord.Message) -> None:
     makeTrans = False
@@ -29,15 +29,22 @@ async def main(message: discord.Message) -> None:
     
     fm = FileManager(message.id)
     attachments = await fm.saveMessageAttachments(message)
+    fileProcesses = []
 
     for attachment in attachments:
         # Test if the file is processable
-        if subprocess.run([
+        magick = [
             'magick',
             'identify',
             '-regard-warnings',
-            fm.getFilePath(attachment)
-        ], timeout=30, capture_output=True).stderr:
+            fm.getFilePath(attachment),
+        ]
+        fileTest = await asyncio.wait_for(asyncio.create_subprocess_exec(
+            *magick,
+            stderr = asyncio.subprocess.PIPE,
+        ), 30)
+        fileTestError = (await fileTest.communicate())[1]
+        if fileTestError:
             # An error was raised; not processable
             continue
 
@@ -58,8 +65,11 @@ async def main(message: discord.Message) -> None:
                 os.path.splitext(attachment)[0] + imgExt)
         ])
 
-        # Process the file
-        subprocess.run(magick, timeout=120)
+        # Add the process to the queue
+        fileProcesses.append(asyncio.wait_for((await asyncio.create_subprocess_exec(*magick)).wait(), 300))
+    
+    # Run all processes and wait for completion
+    await asyncio.gather(*fileProcesses)
     
     outputFiles = fm.getOutputFiles()
     files = []
@@ -68,12 +78,15 @@ async def main(message: discord.Message) -> None:
         filePath = os.path.join(os.sep, fm.getOutputFolder(), file)
         files.append(discord.File(filePath))
 
-    # Compose the message
-    await lrbot.response.sendResponse(
-        message.channel,
-        files = files,
-        reference = message
-    )
+    if files:
+        # Compose the message
+        await lrbot.response.sendResponse(
+            message.channel,
+            files = files,
+            reference = message
+        )
+    else:
+        await lrbot.response.reactToMessage(message, 'fail')
 
     # Delete the folder
     fm.clean()

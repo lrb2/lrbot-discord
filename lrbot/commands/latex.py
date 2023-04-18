@@ -1,8 +1,8 @@
+import asyncio
 import discord
 import lrbot.response
 import os
 from lrbot.filemgr import FileManager
-import subprocess
 
 async def main(message: discord.Message) -> None:
     args = message.content.lower().split()
@@ -87,18 +87,19 @@ async def main(message: discord.Message) -> None:
         generateFile(fm, source, code, template, extraPackages)
 
     # Run the LaTeX interpreter to generate a PDF
-    subprocess.run([
+    xelatex = [
         'xelatex',
         '-interaction=batchmode',
         '--output-directory=' + fm.getOutputFolder(),
         fm.getFilePath(source)
-    ], timeout=120)
+    ]
+    await asyncio.wait_for((await asyncio.create_subprocess_exec(*xelatex)).wait(), 300)
 
     if not pdfOnly:
         # Use ImageMagick to convert the output to one or more images
         sourceOutput = os.path.splitext(source)[0] + '.pdf'
         imgOutput = os.path.splitext(source)[0] + '.png'
-        subprocess.run([
+        magick = [
             'magick',
             '-density', str(density),
             fm.getFilePath(sourceOutput, output=True),
@@ -106,7 +107,8 @@ async def main(message: discord.Message) -> None:
             '-trim',
             '+repage',
             os.path.join(os.sep, fm.getOutputFolder(), imgOutput)
-        ], timeout=120)
+        ]
+        await asyncio.wait_for((await asyncio.create_subprocess_exec(*magick)).wait(), 300)
 
     outputFiles = fm.getOutputFiles()
     files = []
@@ -125,12 +127,15 @@ async def main(message: discord.Message) -> None:
         filePath = os.path.join(os.sep, fm.getOutputFolder(), file)
         files.append(discord.File(filePath))
 
-    # Compose the message
-    await lrbot.response.sendResponse(
-        message.channel,
-        files = files,
-        reference = message
-    )
+    if files:
+        # Compose the message
+        await lrbot.response.sendResponse(
+            message.channel,
+            files = files,
+            reference = message
+        )
+    else:
+        await lrbot.response.reactToMessage(message, 'fail')
 
     # Delete the folder
     fm.clean()
