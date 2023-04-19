@@ -7,6 +7,8 @@ import lrbot.commands.gas
 import lrbot.commands.help
 import lrbot.commands.latex
 
+prefix = '$'
+
 # Make required folders, if missing
 requiredFolders = ['working']
 for requiredFolder in requiredFolders:
@@ -21,8 +23,9 @@ client = discord.Client(intents = intents)
 @client.event
 async def on_ready() -> None:
     print(f'Logged in as {client.user}')
-
-prefix = '$'
+    
+    # Sync list of available commands (if any)
+    await discord.app_commands.CommandTree(client).sync()
 
 @client.event
 async def on_message(message: discord.Message) -> None:
