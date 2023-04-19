@@ -3,6 +3,8 @@ A Discord bot
 
 ## Commands
 - [`$crop`](help/crop)
+- [`$gas`](help/gas)
+- [`$help`](help/help)
 - [`$latex`](help/latex)
 
 ## Setup
