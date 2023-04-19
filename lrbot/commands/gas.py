@@ -1,7 +1,7 @@
 import discord
+import lrbot.location
 import lrbot.response
 import operator
-import re
 import requests
 import string
 from lrbot.filemgr import FileManager
@@ -38,24 +38,6 @@ gasTypeProducts = {
 
 maxStations = 10
 
-delimsPrimary = [';', '&', 'and']
-delimsSecondary = [',']
-delimsAll = delimsPrimary + delimsSecondary
-
-f = open(r'resources/state-abbreviations', 'r')
-states = [state.lower().strip().split(',') for state in f.readlines()]
-f.close()
-
-# Get the initials of the state that the string refers to, if applicable
-def getState(query: str) -> str:
-    query = query.lower()
-    for state in states:
-        if query in state:
-            return state[0]
-    return ''
-
-stateDefault = getState('Illinois')
-
 async def main(message: discord.Message) -> None:
     args = message.content.lower().split(None, 2)
     
@@ -72,158 +54,10 @@ async def main(message: discord.Message) -> None:
         gasType = gasTypes['regular']
         locationStr = ' '.join(args[1:])
     
-    locations = []
-    
-    # Check for delimiters
-    if any(delim in locationStr for delim in delimsPrimary) and any(delim in locationStr for delim in delimsSecondary):
-        # Both primary and secondary delimiters are used (most explicit)
-        # Split by any primary delimiter
-        regex = '|'.join(delimsPrimary)
-        locations = [x.strip() for x in list(filter(None, re.split(regex, locationStr)))]
-        # Split each location by any secondary delimiter
-        for location in locations:
-            regex = '|'.join(delimsSecondary)
-            location = [x.strip() for x in list(filter(None, re.split(regex, location)))]
-            # location should be [City, State]
-            if len(location) > 2:
-                await lrbot.response.reactToMessage(message, 'fail')
-                return
-            elif len(location) == 1:
-                # Is the item just a ZIP code?
-                if len(location) == 5 and re.match('^[0-9]*$', location):
-                    # Add the ZIP code as a location
-                    location = [location]
-                else:
-                    location.append(stateDefault)
-            else:
-                locationState = getState(location[1])
-                if not locationState:
-                    # The last item should be a valid state
-                    await lrbot.response.reactToMessage(message, 'fail')
-                    return
-                location[1] = locationState
-    elif any(delim in locationStr for delim in delimsAll):
-        # Delimiters are used in another manner
-        regex = '|'.join(delimsAll)
-        locationsRaw = [x.strip() for x in list(filter(None, re.split(regex, locationStr)))]
-        # Iterate backwards (finding states first)
-        i = len(locationsRaw) - 1
-        while i >= 0:
-            # Is the item just a ZIP code?
-            if len(locationsRaw[i]) == 5 and re.match('^[0-9]*$', locationsRaw[i]):
-                # Add the ZIP code as a location
-                locations.append([locationsRaw[i]])
-                i -= 1
-                continue
-            # Is the item just a state (and not the first item)?
-            state = getState(locationsRaw[i])
-            if state and i > 0:
-                # The prior item must be the city
-                city = locationsRaw[i-1]
-                locations.append([city, state])
-                i = i - 2
-                continue
-            locationWords = locationsRaw[i].split()
-            # Do the last two words form a state?
-            if len(locationWords) > 2:
-                state = getState(' '.join(locationWords[-2:]))
-                if state:
-                    # The previous words must be the city
-                    city = ' '.join(locationWords[:-2])
-                    locations.append([city, state])
-                    i -= 1
-                    continue
-            # Is the last word a state?
-            state = getState(locationWords[-1])
-            if state:
-                # The previous words must be the city
-                city = ' '.join(locationWords[:-1])
-                locations.append([city, state])
-                i -= 1
-                continue
-            # Assume that only the city name is provided (use the default state)
-            state = stateDefault
-            city = locationsRaw[i]
-            locations.append([city, state])
-            i -= 1
-            continue
-    else:
-        # No known delimiters are used
-        locationsRaw = locationStr.split()
-        lastState = None
-        lastStateIndex = None
-        # Iterate backwards (finding states first)
-        i = len(locationsRaw) - 1
-        while i >= 0:
-            # Is the word a ZIP code (and not immediately before a state)?
-            if len(locationsRaw[i]) == 5 and re.match('^[0-9]*$', locationsRaw[i]) and (lastState is None or lastStateIndex - i > 1):
-                # Set location if this is not the last word
-                if i < len(locationsRaw) - 1 and ((lastState is None and lastStateIndex is None) or (lastStateIndex is not None and lastStateIndex - i > 1)):
-                    # If no state has been found yet
-                    if lastState is None:
-                            if lastStateIndex is None:
-                                lastStateIndex = len(locationsRaw)
-                            lastState = stateDefault
-                    lastCity = ' '.join(locationsRaw[i+1:lastStateIndex])
-                    locations.append([lastCity, lastState])
-                # Add the ZIP code as a location
-                locations.append([locationsRaw[i]])
-                lastStateIndex = i
-                lastState = None
-                i -= 1
-                continue
-            # Do the last two words form a state (and not the first item or immediately before another state)?
-            if i > 1 and ((lastState is None and lastStateIndex is None) or (lastStateIndex is not None and lastStateIndex - i > 1)):
-                state = getState(' '.join(locationsRaw[i-1:i+1]))
-                if state:
-                    # Set location if this is not the last word
-                    if i < len(locationsRaw) - 1:
-                        # If no state has been found yet
-                        if lastState is None:
-                            if lastStateIndex is None:
-                                lastStateIndex = len(locationsRaw)
-                            lastState = stateDefault
-                        lastCity = ' '.join(locationsRaw[i+1:lastStateIndex])
-                        locations.append([lastCity, lastState])
-                    # One or more prior words must be the city
-                    lastStateIndex = i - 1
-                    lastState = state
-                    i = i - 2
-                    continue
-            # Is the word a state (and not the first item or immediately before another state)?
-            if i > 0 and ((lastState is None and lastStateIndex is None) or (lastStateIndex is not None and lastStateIndex - i > 1)):
-                state = getState(locationsRaw[i])
-                if state:
-                    # Set location if this is not the last word
-                    if i < len(locationsRaw) - 1:
-                        # If no state has been found yet
-                        if lastState is None:
-                            if lastStateIndex is None:
-                                lastStateIndex = len(locationsRaw)
-                            lastState = stateDefault
-                        lastCity = ' '.join(locationsRaw[i+1:lastStateIndex])
-                        locations.append([lastCity, lastState])
-                    # One or more prior words must be the city
-                    lastStateIndex = i
-                    lastState = state
-                    i -= 1
-                    continue
-            # Is this the first word?
-            if i == 0:
-                # If no state has been found yet
-                if lastState is None:
-                    if lastStateIndex is None:
-                        lastStateIndex = len(locationsRaw)
-                    lastState = stateDefault
-                city = ' '.join(locationsRaw[i:lastStateIndex])
-                locations.append([city, lastState])
-                i -= 1
-                continue
-            i -= 1
-            continue
-    # locations should be a list filled with [City, State] or [ZIP]
-    # Correct list order
-    locations.reverse()
+    locations = await lrbot.location.parseLocationStr(locationStr)
+    if not locations:
+        await lrbot.response.reactToMessage(message, 'fail')
+        return
     
     # Locations parsed correctly
     await lrbot.response.reactToMessage(message, 'success')
@@ -433,8 +267,8 @@ async def main(message: discord.Message) -> None:
     return
 
 async def run(message: discord.Message) -> None:
-    try:
-        await main(message)
-    except:
-        await lrbot.response.reactToMessage(message, '💣')
-    return
+    #try:
+    await main(message)
+    #except:
+    #    await lrbot.response.reactToMessage(message, '💣')
+    #return
