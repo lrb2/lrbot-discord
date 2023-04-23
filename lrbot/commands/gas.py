@@ -1,9 +1,8 @@
 import discord
+import lrbot.gasprices
 import lrbot.location
 import lrbot.response
 import operator
-import requests
-import string
 from lrbot.filemgr import FileManager
 
 gasTypes = {
@@ -26,14 +25,6 @@ gasTypes = {
     4:          'Diesel',
     5:          'E85',
     12:         'UNL88',
-}
-gasTypeProducts = {
-    1:  'regular_gas',
-    2:  'midgrade_gas',
-    3:  'premium_gas',
-    4:  'diesel',
-    5:  'e85',
-    12: 'e15',
 }
 
 maxStations = 10
@@ -63,156 +54,8 @@ async def main(message: discord.Message) -> None:
     await lrbot.response.reactToMessage(message, 'success')
     
     async with message.channel.typing():
-        # Get gas prices lists
-        requestURL = 'https://www.gasbuddy.com/graphql'
-        requestOperationName = 'LocationBySearchTerm'
-        requestQuery = '''query LocationBySearchTerm($brandId: Int, $cursor: String, $fuel: Int, $lat: Float, $lng: Float, $maxAge: Int, $search: String) {
-            locationBySearchTerm(lat: $lat, lng: $lng, search: $search) {
-                countryCode
-                displayName
-                latitude
-                longitude
-                regionCode
-                stations(brandId: $brandId, cursor: $cursor, fuel: $fuel, maxAge: $maxAge) {
-                    count
-                    cursor {
-                        next
-                        __typename
-                    }
-                    results {
-                        address {
-                            country
-                            line1
-                            line2
-                            locality
-                            postalCode
-                            region
-                            __typename
-                        }
-                        name
-                        prices {
-                            cash {
-                                nickname
-                                posted_time
-                                price
-                                __typename
-                            }
-                            credit {
-                                nickname
-                                posted_time
-                                price
-                                __typename
-                            }
-                            discount
-                            fuel_product
-                            __typename
-                        }
-                        priceUnit
-                        ratings_count
-                        star_rating
-                        __typename
-                    }
-                    __typename
-                }
-            }
-        }'''
-        requestHeaders = {
-            'cache-control': 'no-cache',
-            'origin': 'https://www.gasbuddy.com',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
-        }
-        
-        gasLocations = []
-        gasStationsStrict = []
-        gasStationsNearby = []
-        
-        locationRequests = []
-        # Ensure that strict and nearby results are both found
-        for location in locations:
-            # Only works for city + state (not ZIP codes)
-            if len(location) == 2:
-                locationRequests.append({
-                    'str':      ', '.join(location),
-                    'strict':   True,
-                    'zip':      False,
-                    })
-                locationRequests.append({
-                    'str':      ' '.join(location),
-                    'strict':   False,
-                    'zip':      False,
-                    })
-            elif len(location) == 1:
-                locationRequests.append({
-                    'str':      location[0],
-                    'strict':   False,
-                    'zip':      True,
-                    })
-        
-        for locationRequest in locationRequests:
-            locationStr = locationRequest['str']
-            isStrict = locationRequest['strict']
-            isZIP = locationRequest['zip']
-            requestVariables = {
-                'fuel':     gasType,
-                'maxAge':   0,
-                'search':   locationStr,
-            }
-            requestData = {
-                'operationName':    requestOperationName,
-                'variables':        requestVariables,
-                'query':            requestQuery,
-            }
-                    
-            request = requests.post(url = requestURL, json = requestData, headers = requestHeaders)
-            gasData = request.json()['data']['locationBySearchTerm']
-            
-            if isStrict or isZIP:
-                gasLocations.append(gasData['displayName'])
-            
-            for gasStation in gasData['stations']['results']:
-                # Format station address
-                address = gasStation['address']['line1']
-                # Correct street address for all-caps (unless it contains numbers, like a state highway)
-                if address.upper() == address and not any(c.isdigit() for c in address.split(None, 1)[1]):
-                    address = string.capwords(address)
-                if gasStation['address']['line2']:
-                    address += ', ' + gasStation['address']['line2']
-                address += ', ' + gasStation['address']['locality'] + ', ' + gasStation['address']['region']
-                # Remove last 4 from ZIP code, if provided
-                address += ' ' + gasStation['address']['postalCode'].split('-',1)[0]
-                
-                name = gasStation['name']
-                
-                price = float()
-                for gasPrice in gasStation['prices']:
-                    if gasPrice['fuel_product'] == gasTypeProducts[gasType]:
-                        if gasPrice['credit']:
-                            price = gasPrice['credit']['price']
-                            break
-                        elif gasPrice['cash']:
-                            price = gasPrice['cash']['price']
-                            break
-                if not price:
-                    # No price found (ignore station)
-                    continue
-                
-                unit = gasStation['priceUnit']
-                
-                rating = gasStation['star_rating']
-                
-                details = {
-                    'name': name,
-                    'address': address,
-                    'price': price,
-                    'unit': unit,
-                    'rating': rating,
-                }
-                
-                # Add station to the full list of stations
-                if isStrict or (isZIP and locationStr in gasStation['address']['postalCode']):
-                    gasStationsStrict.append(details)
-                else:
-                    gasStationsNearby.append(details)
+        gasStationsStrict, gasLocations = await lrbot.gasprices.getStations(locations, gasType, True)
+        gasStationsNearby, _ = await lrbot.gasprices.getStations(locations, gasType, False)
         
         # Remove duplicates in each set (https://stackoverflow.com/a/9427216)
         gasStationsStrict = [dict(t) for t in {tuple(d.items()) for d in gasStationsStrict}]
@@ -267,8 +110,8 @@ async def main(message: discord.Message) -> None:
     return
 
 async def run(message: discord.Message) -> None:
-    #try:
-    await main(message)
-    #except:
-    #    await lrbot.response.reactToMessage(message, '💣')
-    #return
+    try:
+        await main(message)
+    except:
+        await lrbot.response.reactToMessage(message, '💣')
+    return
