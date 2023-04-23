@@ -1,13 +1,14 @@
 import discord
 import logging
 import os
+import lrbot.config
 import lrbot.response
 import lrbot.commands.crop
 import lrbot.commands.gas
 import lrbot.commands.help
 import lrbot.commands.latex
 
-prefix = '$'
+prefix = lrbot.config.settings['prefix']
 
 # Make required folders, if missing
 requiredFolders = ['working']

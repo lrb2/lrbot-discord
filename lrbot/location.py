@@ -1,12 +1,14 @@
+import lrbot.config
+import json
 import re
 
-delimsPrimary = [';', '&', 'and']
-delimsSecondary = [',']
+delimsPrimary = json.loads(lrbot.config.location['delimsPrimary'])
+delimsSecondary = json.loads(lrbot.config.location['delimsSecondary'])
 delimsAll = delimsPrimary + delimsSecondary
 
 # stateDefault will be set on first run (cannot run coroutine prior)
 stateDefault = None
-stateDefaultStr = 'Illinois'
+stateDefaultStr = lrbot.config.location['stateDefaultStr']
 
 f = open(r'resources/state-abbreviations', 'r')
 states = [state.lower().strip().split(',') for state in f.readlines()]
@@ -78,7 +80,9 @@ async def parseLocationStrMixed(locationStr: str) -> list[list[str]]:
                 locations.append([location[0], locationState])
         elif len(location) == 1:
             # Is the item not just a ZIP code? (missing a delimiter, or just without a state?)
-            if not await isZipCode(location[0]):
+            if await isZipCode(location[0]):
+                locations.append(location)
+            else:
                 locations += await parseLocationStrNone(location[0])
 
     return locations
