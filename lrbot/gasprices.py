@@ -108,13 +108,15 @@ async def getStations(locations: list[list[str]], gasType: int, strict: bool = T
     async with aiohttp.ClientSession(headers = requestHeaders) as session:
         for locationRequest in locationRequests:           
             gasDatas.append(await getData(locationRequest['str'], gasType, session))
+            
+            # Add the location name to the list
+            if locationRequest['strict'] or locationRequest['zip']:
+                gasLocations.append(gasDatas[-1]['displayName'])
+            
+            # Get another set of data if available
             cursor = int(gasDatas[-1]['stations']['cursor']['next'])
             if int(gasDatas[-1]['stations']['count']) > cursor + 1:
-                # Get another set of data
                 gasDatas.append(await getData(locationRequest['str'], gasType, session, cursor))
-            
-            if locationRequest['strict'] or locationRequest['zip']:
-                gasLocations.append(gasDatas[0]['displayName'])
             
             for gasData in gasDatas:
                 for gasStation in gasData['stations']['results']:
