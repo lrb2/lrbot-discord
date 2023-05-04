@@ -1,0 +1,7 @@
+version: '3.9'
+services:
+  main:
+    build: .
+    init: true
+    volumes:
+      - "$LOCAL_WORKSPACE_FOLDER:/code"

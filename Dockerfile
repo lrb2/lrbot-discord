@@ -24,11 +24,11 @@ RUN wget https://imagemagick.org/archive/binaries/magick && chmod +x magick && .
 WORKDIR /usr/local/bin
 #    e. Add a soft link to run ImageMagick
 RUN ln -s magick.d/squashfs-root/AppRun magick
-## 4. Install discord.py and emoji packages
-RUN pip install aiohttp "discord.py>=2.2.0" emoji
-## 5. Set working directory
+## 4. Set working directory
 WORKDIR /code
-## 6. Copy files (will be overwritten by mount)
+## 5. Copy files (will be overwritten by mount)
 COPY . .
+## 6. Install packages from requirements.txt
+RUN pip install -r requirements.txt
 ## 7. Set startup command
 CMD ["python3", "lrbot.py"]
