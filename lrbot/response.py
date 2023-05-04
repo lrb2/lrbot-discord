@@ -6,7 +6,8 @@ async def sendResponse(
     text: str = None,
     files: list[discord.File] = None,
     reference: discord.Message = None,
-    embeds: list[discord.Embed] = None
+    embeds: list[discord.Embed] = None,
+    silent: bool = False
 ) -> None:
     '''
     Sends a message to the recipient entity (Messageable) (channel, user, etc.) including text and/or files.
@@ -34,19 +35,21 @@ async def sendResponse(
             content = text,
             files = files,
             reference = reference,
-            embeds = embeds
+            embeds = embeds,
+            silent = silent
         )
     else:
         await recipient.send(
             content = text,
             file = files,
             reference = reference,
-            embeds = embeds
+            embeds = embeds,
+            silent = silent
         )
     
     # Send any excess attachments as another message
     if filesQueued or embedsQueued:
-        await sendResponse(recipient, text, filesQueued, reference, embedsQueued)
+        await sendResponse(recipient, text, filesQueued, reference, embedsQueued, silent)
 
 async def reactToMessage(
     reference: discord.Message,
@@ -67,3 +70,43 @@ async def reactToMessage(
         return
 
     await reference.add_reaction(emoji)
+
+async def runAction(
+    action: dict,
+    client: discord.Client,
+    reference: discord.Message = None,
+) -> None:
+    '''
+    Processes the given action dict.
+    If a message is provided, any messages will reference that message.
+    '''
+    match action['type']:
+        case 'message':
+            # Use the specified channel, or the channel of the reference message.
+            if 'channel' in action:
+                responseChannel = client.get_partial_messageable(action['channel'])
+                responseReference = None
+            else:
+                responseChannel = reference.channel
+                responseReference = reference
+            # Add mentions to the specified content.
+            responseContent = ''
+            if 'mention' in action:
+                for id in action['mention']:
+                    responseContent += '<@' + str(id) + '> '
+            responseContent += action['content']
+            # Add embeds if specified.
+            responseEmbeds = []
+            if 'embeds' in action:
+                for embed in action['embeds']:
+                    # Use Discord standard embed format (see https://discord.com/developers/docs/resources/channel#embed-object)
+                    responseEmbeds.append(discord.Embed.from_dict(embed))
+            # Make the message silent if specified.
+            responseSilent = True if 'silent' in action and action['silent'] else False
+            await sendResponse(
+                responseChannel,
+                responseContent,
+                reference = responseReference,
+                embeds = responseEmbeds,
+                silent = responseSilent
+            )

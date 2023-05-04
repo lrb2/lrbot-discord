@@ -1,0 +1,125 @@
+[
+    {
+        "author": 1234567890,
+        "actions": [
+            {
+                "type": "message",
+                "channel": 1234567890,
+                "mention": [
+                    1234567890
+                ],
+                "content": "sample reminder message",
+                "embeds": [
+                    {
+                        "title": "sample embed",
+                        "description": "see Discord docs for format details",
+                        "url": "https://discord.com/developers/docs/resources/channel#embed-object"
+                    }
+                ],
+                "silent": true
+            }
+        ],
+        "repeat": [
+            {
+                "period": "day",
+                "every": 30,
+                "times": [
+                    {
+                        "h": 6,
+                        "m": 0,
+                        "s": 0
+                    }
+                ],
+                "tz": "America/Chicago",
+                "nextRun": 1234567890,
+                "until": 1234567890
+            },
+            {
+                "period": "week",
+                "every": 1,
+                "days": [5, 6],
+                "times": [
+                    {
+                        "h": 6,
+                        "m": 0,
+                        "s": 0
+                    }
+                ],
+                "tz": "America/Chicago",
+                "nextRun": 1234567890,
+                "until": 1234567890
+            },
+            {
+                "period": "month",
+                "every": 1,
+                "days": [15],
+                "times": [
+                    {
+                        "h": 6,
+                        "m": 0,
+                        "s": 0
+                    }
+                ],
+                "tz": "America/Chicago",
+                "nextRun": 1234567890,
+                "until": 1234567890
+            },
+            {
+                "period": "year",
+                "every": 1,
+                "months": [12],
+                "days": [24],
+                "times": [
+                    {
+                        "h": 6,
+                        "m": 0,
+                        "s": 0
+                    }
+                ],
+                "tz": "America/Chicago",
+                "nextRun": 1234567890,
+                "until": 1234567890
+            }
+        ],
+        "nextRun": 1234567890
+    },
+    {
+        "conditions": [
+            {
+                "type": "no_message",
+                "leeway": 30,
+                "user": 1234567890,
+                "channels": [1234567890],
+                "regex": "\\btest\\b",
+                "mentions": [
+                    1234567890
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "type": "message",
+                "content": "the condition has not been met"
+            }
+        ],
+        "repeat": [
+            {
+                "period": "week",
+                "every": 1,
+                "days": [0, 1, 2, 3, 4],
+                "times": [
+                    {
+                        "h": 6,
+                        "m": 0,
+                        "s": 0
+                    }
+                ],
+                "tz": "America/Chicago",
+                "nextRun": 1234567890,
+                "until": 1234567890
+            }
+        ],
+        "nextCheck": 1234567890,
+        "nextRun": 1234567890
+    }
+]

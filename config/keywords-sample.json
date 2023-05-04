@@ -1,0 +1,42 @@
+[
+    {
+        "actions": [
+            {
+                "type": "message",
+                "channel": 1234567890,
+                "mention": [
+                    1234567890
+                ],
+                "content": "sample message",
+                "embeds": [
+                    {
+                        "title": "sample embed",
+                        "description": "see Discord docs for format details",
+                        "url": "https://discord.com/developers/docs/resources/channel#embed-object"
+                    }
+                ]
+            }
+        ],
+        "conditions": [
+            {
+                "type": "message",
+                "regex": "\\btest\\b",
+                "mentions": [
+                    1234567890
+                ]
+            }
+        ],
+        "user_whitelist": [
+            1234567890
+        ],
+        "user_blacklist": [
+            1234567890
+        ],
+        "channel_whitelist": [
+            1234567890
+        ],
+        "channel_blacklist": [
+            1234567890
+        ]
+    }
+]

@@ -1,1 +1,1 @@
-__all__ = ['crop', 'gas', 'help', 'latex']
+__all__ = ['crop', 'gas', 'help', 'keywords', 'latex', 'remindme']

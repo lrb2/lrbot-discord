@@ -1,0 +1,6 @@
+Exempts the listed user(s) from being searched for keywords.
+`$ignore users`
+Users must be user IDs, mentions, or 'me' (for the requesting user) separated by spaces.
+
+**Examples**
+`$ignore me` Ignores the requesting user.
