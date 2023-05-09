@@ -1,8 +1,10 @@
 import discord
+import lrbot.exceptions
 import lrbot.gasprices
 import lrbot.location
 import lrbot.response
 import operator
+from discord.ext import commands
 from lrbot.filemgr import FileManager
 
 gasTypes = {
@@ -29,26 +31,27 @@ gasTypes = {
 
 maxStations = 10
 
-async def main(message: discord.Message) -> None:
-    args = message.content.lower().split(None, 2)
+@commands.command(name = 'gas')
+async def main(ctx: commands.Context, *, arg: str) -> None:
+    message = ctx.message
     
     # There must be an argument
-    if len(args) < 2:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+    if not arg:
+        raise lrbot.exceptions.InvalidArgs('No arguments passed')
+    
+    args = arg.lower().split(None, 1)
     
     # If a gas type is provided before the location string, use it
-    if args[1] in gasTypes and len(args) > 2:
-        gasType = gasTypes[args[1]]
-        locationStr = args[2]
+    if args[0] in gasTypes and len(args) > 1:
+        gasType = gasTypes[args[0]]
+        locationStr = args[1]
     else:
         gasType = gasTypes['regular']
-        locationStr = ' '.join(args[1:])
+        locationStr = arg
     
     locations = await lrbot.location.parseLocationStr(locationStr)
     if not locations:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+        raise lrbot.exceptions.InvalidArgs('No locations found')
     
     # Locations parsed correctly
     await lrbot.response.reactToMessage(message, 'success')
@@ -109,9 +112,9 @@ async def main(message: discord.Message) -> None:
         )
     return
 
-async def run(message: discord.Message) -> None:
-    try:
-        await main(message)
-    except:
-        await lrbot.response.reactToMessage(message, '💣')
-    return
+@main.error
+async def on_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    pass
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)

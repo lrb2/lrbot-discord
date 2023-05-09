@@ -5,9 +5,10 @@ import math
 import time
 import lrbot.config
 import lrbot.response
-from lrbot.remindermgr import ReminderManager
+from discord.ext import commands
+from lrbot.cogs.reminders import Reminders
 
-async def main(rm: ReminderManager) -> None:
+async def main(rm: Reminders) -> None:
     currentTime = time.time()
     # Check for reminders that are due or have passed
     reminderModified = False
@@ -36,14 +37,9 @@ async def main(rm: ReminderManager) -> None:
     return
         
 
-async def run(rm: ReminderManager) -> None:
-    #try:
-        # Repeat the main function indefinitely
+async def run(bot: commands.Bot) -> None:
+    rm: Reminders = bot.get_cog('Reminders')
+    
+    # Repeat the main function indefinitely
     while True:
         await main(rm)
-    #except:
-        #await lrbot.response.sendResponse(
-        #    (await rm.client.fetch_user(int(lrbot.config.settings['owner']))),
-        #    'An error has been caught in the reminder loop. The reminder loop is suspended until the container is restarted.'
-        #)
-        #return

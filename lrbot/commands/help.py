@@ -1,26 +1,21 @@
 import discord
 import os
+import lrbot.config
+import lrbot.exceptions
 import lrbot.response
+from discord.ext import commands
 
-helpFolder = os.path.join(
-    os.sep,
-    os.getcwd(),
-    'help'
-)
-
-async def run(message: discord.Message) -> None:
-    args = message.content.lower().split()
-
-    source = 'help'
-
-    if len(args) > 1:
-        source = args[1]
+@commands.command(name = 'help')
+async def main(
+    ctx: commands.Context,
+    cmd: str = 'help'
+) -> None:
+    message = ctx.message
     
-    helpPath = helpFolder + os.sep + source
+    helpPath = 'help/' + cmd
     
     if not os.path.exists(helpPath):
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+        raise lrbot.exceptions.InvalidArgs('No matching help file found.')
     
     await lrbot.response.reactToMessage(message, 'success')
 
@@ -29,8 +24,8 @@ async def run(message: discord.Message) -> None:
     helpFile.close()
 
     helpTitle = 'lrbot Help'
-    if source != 'help':
-        helpTitle = helpTitle + ': $' + source
+    if cmd != 'help':
+        helpTitle = helpTitle + ': ' + lrbot.config.settings['prefix'] + cmd
 
     helpEmbed = discord.Embed(
         title = helpTitle,
@@ -44,3 +39,10 @@ async def run(message: discord.Message) -> None:
         embeds = [helpEmbed]
     )
     return
+
+@main.error
+async def on_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    pass
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)

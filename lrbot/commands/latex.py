@@ -1,25 +1,33 @@
 import asyncio
 import discord
+import logging
+import lrbot.exceptions
 import lrbot.response
 import os
+from discord.ext import commands
 from lrbot.filemgr import FileManager
 
-async def main(message: discord.Message) -> None:
-    args = message.content.lower().split()
+@commands.command(name = 'latex')
+async def main(
+    ctx: commands.Context,
+    *,
+    query: str
+) -> None:
+    message = ctx.message
+    
+    args = query.lower().split(None, 5)
 
-    if len(args) < 2:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+    if len(args) < 1:
+        raise lrbot.exceptions.InvalidArgs('Too few arguments passed')
 
     # First argument
     # Get template to use
-    if args[1] == 'raw':
+    if args[0] == 'raw':
         template = None
-    elif os.path.exists('latex/templates/' + args[1] + '/'):
-        template = args[1]
+    elif os.path.exists('latex/templates/' + args[0] + '/'):
+        template = args[0]
     else:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+        raise lrbot.exceptions.InvalidArgs('Invalid template argument')
     
     validArgs = 1
 
@@ -27,8 +35,8 @@ async def main(message: discord.Message) -> None:
     pdfOnly = False
     extraPackages = []
 
-    if len(args) > 2:
-        for arg in args[2:]:
+    if len(args) > 1:
+        for arg in args[1:]:
             if arg.startswith('packages='):
                 # Add extra packages to template
                 extraPackages = arg[9:].split(',')
@@ -45,16 +53,14 @@ async def main(message: discord.Message) -> None:
                 # No more valid arguments
                 break
 
-    codeIndex = None
-    if len(args) > validArgs + 1:
-        codeIndex = message.content.index(args[validArgs]) + len(args[validArgs]) + 1
-
     # All remaining content is LaTeX
     # Check for LaTeX content, either in content or attachment
     code = None
-    if codeIndex:
+    source = None
+    if len(args) > validArgs:
         # Text content exists
-        code = message.content[codeIndex:]
+        codeIndex = query.index(args[validArgs])
+        code = query[codeIndex:]
         source = str(message.id) + ".tex"
     else:
         # An attachment must include LaTeX code
@@ -66,15 +72,14 @@ async def main(message: discord.Message) -> None:
                 break
     
     if source is None:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+        raise lrbot.exceptions.InvalidFiles('No source files found')
 
     # LaTeX content has been verified
     await lrbot.response.reactToMessage(message, 'success')
 
     # Save the message code and files
     fm = FileManager(message.id)
-    attachments = await fm.saveMessageAttachments(message)
+    await fm.saveMessageAttachments(message)
 
     # Can add template to code in file if desired
     if template and source and code is None:
@@ -135,7 +140,7 @@ async def main(message: discord.Message) -> None:
             reference = message
         )
     else:
-        await lrbot.response.reactToMessage(message, 'fail')
+        raise lrbot.exceptions.InvalidFiles('No output files generated')
 
     # Delete the folder
     fm.clean()
@@ -200,11 +205,15 @@ def generateFile(
     file.close()
     return
 
-async def run(message: discord.Message) -> None:
+@main.error
+async def on_error(ctx: commands.Context, error: commands.CommandError) -> None:
     try:
-        await main(message)
-    except:
-        # Clean up any created files
-        FileManager(message.id, reinit=True).clean()
-        await lrbot.response.reactToMessage(message, '💣')
-    return
+        # Try to clean up any created files
+        FileManager(ctx.message.id, reinit=True).clean()
+    except Exception as error:
+        if not isinstance(error, FileNotFoundError):
+            logger = logging.getLogger('discord.lrbot-latex')
+            logger.warning(f'Working folder for {ctx.message.id} was not successfully cleaned after error')
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)

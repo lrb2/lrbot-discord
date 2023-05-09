@@ -1,27 +1,26 @@
 import discord
 import lrbot
+import lrbot.exceptions
 import lrbot.response
 import os
+import typing
+from discord.ext import commands
+from lrbot.cogs.filterlists import FilterLists
 
-async def main(message: discord.Message) -> None:
-    args = message.content.lower().split(None)
-    
+@commands.command(name = 'ignore')
+async def main(
+    ctx: commands.Context,
+    *users: typing.Union[discord.User, str]
+) -> None:
     idsToIgnore = []
+    for user in users:
+        if isinstance(user, discord.abc.User):
+            idsToIgnore.append(user.id)
+        if user == 'me':
+            idsToIgnore.append(ctx.author.id)
     
-    for mention in message.mentions:
-        # Add all @ mentions first
-        idsToIgnore.append(mention.id)
-    
-    for id in args[1:]:
-        if id == 'me':
-            idsToIgnore.append(message.author.id)
-        else:
-            try:
-                # Try for any raw IDs (might just be the mention in text form)
-                int(id)
-                idsToIgnore.append(id)
-            except ValueError:
-                continue
+    if len(idsToIgnore) < 1:
+        raise lrbot.exceptions.InvalidArgs('No valid users passed')
     
     if os.path.exists(r'config/user_whitelist'):
         # Remove users from whitelist
@@ -51,11 +50,16 @@ async def main(message: discord.Message) -> None:
         file.truncate()
         file.close()
     
-    await lrbot.response.reactToMessage(message, 'success')
+    # Reload the white- and blacklists
+    flm: FilterLists = ctx.bot.get_cog('FilterLists')
+    if flm is not None:
+        flm.load()
+    
+    await lrbot.response.reactToMessage(ctx.message, 'success')
 
-async def run(message: discord.Message) -> None:
-    #try:
-    await main(message)
-    #except:
-    #    await lrbot.response.reactToMessage(message, '💣')
-    return
+@main.error
+async def on_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    pass
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)

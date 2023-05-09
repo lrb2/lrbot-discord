@@ -1,29 +1,34 @@
 import asyncio
 import discord
+import logging
+import lrbot.exceptions
 import lrbot.response
 import os
+from discord.ext import commands
 from lrbot.filemgr import FileManager
 
-async def main(message: discord.Message) -> None:
+@commands.command(name = 'crop')
+async def main(
+    ctx: commands.Context,
+    *args: list[str]
+) -> None:
+    message = ctx.message
+    
     makeTrans = False
     transColor = 'white'
     density = 600
     imgExt = '.png'
 
-    args = message.content.lower().split()
-
-    if len(args) > 1:
-        for arg in args[1:]:
-            if arg == 'transparent' or arg == 'trans':
-                # Make the background transparent
-                makeTrans = True
-            elif arg.startswith('dpi='):
-                # Manually set density
-                density = int(arg[4:])
+    for arg in args:
+        if arg == 'transparent' or arg == 'trans':
+            # Make the background transparent
+            makeTrans = True
+        elif arg.startswith('dpi='):
+            # Manually set density
+            density = int(arg[4:])
     
     if len(message.attachments) < 1:
-        await lrbot.response.reactToMessage(message, 'fail')
-        return
+        raise lrbot.exceptions.InvalidFiles('No attachments passed')
     
     await lrbot.response.reactToMessage(message, 'success')
     
@@ -86,18 +91,20 @@ async def main(message: discord.Message) -> None:
             reference = message
         )
     else:
-        await lrbot.response.reactToMessage(message, 'fail')
+        raise lrbot.exceptions.InvalidFiles('No output files generated')
 
     # Delete the folder
     fm.clean()
-    
-    return
 
-async def run(message: discord.Message) -> None:
+@main.error
+async def on_error(ctx: commands.Context, error: commands.CommandError) -> None:
     try:
-        await main(message)
-    except:
-        # Clean up any created files
-        FileManager(message.id, reinit=True).clean()
-        await lrbot.response.reactToMessage(message, '💣')
-    return
+        # Try to clean up any created files
+        FileManager(ctx.message.id, reinit=True).clean()
+    except Exception as error:
+        if not isinstance(error, FileNotFoundError):
+            logger = logging.getLogger('discord.lrbot-crop')
+            logger.warning(f'Working folder for {ctx.message.id} was not successfully cleaned after error')
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)

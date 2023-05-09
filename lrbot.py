@@ -1,138 +1,116 @@
 import discord
 import logging
-import os
+import logging.handlers
 import lrbot.config
+import lrbot.exceptions
 import lrbot.response
-import lrbot.commands.crop
-import lrbot.commands.gas
-import lrbot.commands.help
-import lrbot.commands.ignore
-import lrbot.commands.keywords
-import lrbot.commands.latex
-import lrbot.commands.remindme
 import lrbot.loops.reminder
-from lrbot.keywordsmgr import KeywordsManager
-from lrbot.remindermgr import ReminderManager
+import os
+import sys
+import traceback
+from discord.ext import commands
+from lrbot.cogs.filterlists import FilterLists
+from lrbot.cogs.keywords import Keywords
+from lrbot.cogs.reminders import Reminders
 
-prefix = lrbot.config.settings['prefix']
+# Set up logging
+logger = logging.getLogger('discord')
+logger.setLevel(logging.INFO)
+logHandler = logging.handlers.RotatingFileHandler(
+    filename = 'lrbot.log',
+    encoding = 'utf-8',
+    maxBytes = 32*1024*1024,
+    backupCount = 5
+)
+logFormatter = logging.Formatter(
+    fmt = '{asctime} [{levelname}] {name}: {message}',
+    datefmt = '%Y-%m-%d %H:%M:%S',
+    style = '{'
+)
+logHandler.setFormatter(logFormatter)
+logger.addHandler(logHandler)
+
+# Log all uncaught exceptions
+hookLogger = logging.getLogger('discord.lrbot')
+def logExceptHook(type, value, tb) -> None:
+    tbStr = ''.join(traceback.format_tb(tb))
+    hookLogger.critical(f'Uncaught exception: {type} {value}\n{tbStr}')
+sys.excepthook = logExceptHook
+
+commandNames = [
+    'crop',
+    'gas',
+    'help',
+    'ignore',
+    'latex',
+    'reload',
+    'remindme'
+]
 
 # Make required folders, if missing
 requiredFolders = ['working']
 for requiredFolder in requiredFolders:
     os.makedirs(requiredFolder, exist_ok=True)
 
-whitelistedUsers = None
-whitelistedChannels = None
-blacklistedUsers = None
-blacklistedChannels = None
-
-def loadFilterLists():
-    '''
-    Load the user and channel white- and blacklists.
-    '''
-    global whitelistedUsers, whitelistedChannels, blacklistedUsers, blacklistedChannels
-    # Reset all filter lists
-    whitelistedUsers = None
-    whitelistedChannels = None
-    blacklistedUsers = None
-    blacklistedChannels = None
-    # Get whitelisted users
-    if os.path.exists(r'config/user_whitelist'):
-        with open(r'config/user_whitelist', 'r') as file:
-            whitelistedUsers = [int(line.rstrip()) for line in file]
-    # Get whitelisted channels
-    if os.path.exists(r'config/channel_whitelist'):
-        with open(r'config/channel_whitelist', 'r') as file:
-            whitelistedChannels = [int(line.rstrip()) for line in file]
-    # Get blacklisted users if no whitelist
-    if not whitelistedUsers and os.path.exists(r'config/user_blacklist'):
-        with open(r'config/user_blacklist', 'r') as file:
-            blacklistedUsers = [int(line.rstrip()) for line in file]
-        # Ignore own messages
-        blacklistedUsers.append(client.user.id)
-    # Get blacklisted channels if no whitelist
-    if not whitelistedChannels and os.path.exists(r'config/channel_blacklist'):
-        with open(r'config/channel_blacklist', 'r') as file:
-            blacklistedChannels = [int(line.rstrip()) for line in file]
-
 intents = discord.Intents.none()
 intents.messages = True
 intents.message_content = True
 
-client = discord.Client(intents = intents)
+bot = commands.Bot(
+    command_prefix = commands.when_mentioned_or(lrbot.config.settings['prefix']),
+    case_insensitive = True,
+    help_command = None,
+    owner_id = int(lrbot.config.settings['owner']),
+    intents = intents
+)
 
-km = KeywordsManager(client)
-rm = ReminderManager(client)
-
-@client.event
+@bot.event
 async def on_ready() -> None:
-    print(f'Logged in as {client.user}')
+    print(f'Logged in as {bot.user.name} ({bot.user.id}) using discord.py {discord.__version__}')
     
-    # Load white/blacklists
-    loadFilterLists()
+    # Add cogs
+    await bot.add_cog(FilterLists(bot))
+    await bot.add_cog(Keywords(bot))
+    await bot.add_cog(Reminders(bot))
+    
+    # Add command extensions
+    for commandName in commandNames:
+        await bot.load_extension('lrbot.commands.' + commandName)
     
     # Sync list of available commands (if any)
-    await discord.app_commands.CommandTree(client).sync()
+    await bot.tree.sync()
     
     # Start the reminder loop
-    client.loop.create_task(lrbot.loops.reminder.run(rm))
+    bot.loop.create_task(lrbot.loops.reminder.run(bot))
 
-@client.event
-async def on_message(message: discord.Message) -> None:
-    if not len(message.content):
-        # There must be text in the message
-        return
-    if message.author == client.user:
-        # Ignore the bot's own messages
-        return
-    if message.content[0] != prefix:
-        # Check if condition for reminder reminders
-        await rm.checkMessage(message)
-        
-        # Only check for keywords if whitelisted or not blacklisted
-        if not (
-            (blacklistedChannels and message.channel.id in blacklistedChannels) or
-            (whitelistedChannels and not message.channel.id in whitelistedChannels) or
-            (blacklistedUsers and message.author.id in blacklistedUsers) or
-            (whitelistedUsers and not message.author.id in whitelistedUsers)
-        ):
-            await lrbot.commands.keywords.run(message, km)
+async def logCommandErrors(ctx: commands.Context, cmdError: commands.CommandError) -> None:
+    if isinstance(cmdError, commands.CommandNotFound):
         return
     
-    command = message.content.split(None,1)[0][1:].lower()
+    # Get the actual error, not just a CommandInvokeError
+    error = cmdError.__cause__
+    
+    message = ctx.message
+    moduleLogger = logging.getLogger('discord.lrbot-' + ctx.command.name)
+    
+    if isinstance(error, lrbot.exceptions.RaisedException):
+        # The exception is known and caught
+        await lrbot.response.reactToMessage(message, 'fail')
+        # Log it for information
+        moduleLogger.info(f'Caught command failure: {type(error)} {error}\nMessage {message.id} by {message.author.name}: {message.content}')
+    else:
+        # Uncaught exception
+        await lrbot.response.reactToMessage(message, '💣')
+        # Log the error
+        tbStr = ''.join(traceback.format_tb(error.__traceback__))
+        moduleLogger.error(f'Uncaught exception: {type(error)} {error}\nMessage {message.id} by {message.author.name}: {message.content}\n{tbStr}')
 
-    match command:
-        case 'help':
-            # Run help.py
-            await lrbot.commands.help.run(message)
-        case 'latex':
-            # Run latex.py
-            await lrbot.commands.latex.run(message)
-        case 'crop':
-            # Run crop.py
-            await lrbot.commands.crop.run(message)
-        case 'gas':
-            # Run gas.py
-            await lrbot.commands.gas.run(message)
-        case 'ignore':
-            # Run ignoreme.py
-            await lrbot.commands.ignore.run(message)
-            loadFilterLists()
-        case 'reload':
-            # Only usable by the owner
-            if message.author.id == int(lrbot.config.settings['owner']):
-                # Reload filter, keywords, and reminders lists
-                loadFilterLists()
-                km.load()
-                rm.load()
-                await lrbot.response.reactToMessage(message, 'success')
-        case 'remindme':
-            # Run remindme.py
-            await lrbot.commands.remindme.run(message, rm)
-
-logger = logging.FileHandler(filename='lrbot.log', encoding='utf-8', mode='w')
+bot.on_command_error = logCommandErrors
 
 f = open(r'secret-token', 'r')
 token = f.readline().strip()
 f.close()
-client.run(token, log_handler = logger)
+bot.run(
+    token,
+    log_handler = None
+)

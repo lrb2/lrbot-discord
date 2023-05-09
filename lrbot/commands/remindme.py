@@ -1,16 +1,19 @@
 import discord
 import lrbot.response
-from lrbot.remindermgr import ReminderManager
+from discord.ext import commands
+from lrbot.cogs.reminders import Reminders
 
-async def main(message: discord.Message, rm: ReminderManager) -> None:
-    args = message.content.lower().split(None, 2)
-    
+@commands.command(name = 'remindme')
+async def main(
+    ctx: commands.Context
+) -> None:
+    rm: Reminders = ctx.bot.get_cog('Reminders')
     # TODO: Add functionality to create reminders and skip next n occurrences
     # Possibly just allow providing JSON and verify format
 
-async def run(message: discord.Message, rm: ReminderManager) -> None:
-    try:
-        await main(message, rm)
-    except:
-        await lrbot.response.reactToMessage(message, '💣')
-    return
+@main.error
+async def on_error(ctx: commands.Context) -> None:
+    await lrbot.response.reactToMessage(ctx.message, '💣')
+
+async def setup(bot: commands.Bot) -> None:
+    bot.add_command(main)
