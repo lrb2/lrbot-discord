@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import logging
+import lrbot.config
 import lrbot.exceptions
 import lrbot.response
 import os
@@ -15,9 +16,9 @@ async def main(
     message = ctx.message
     
     makeTrans = False
-    transColor = 'white'
-    density = 600
-    imgExt = '.png'
+    transColor = lrbot.config.crop['transColor']
+    density = int(lrbot.config.crop['density'])
+    imgExt = '.' + lrbot.config.crop['format']
 
     for arg in args:
         if arg == 'transparent' or arg == 'trans':

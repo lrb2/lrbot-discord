@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import logging
+import lrbot.config
 import lrbot.exceptions
 import lrbot.response
 import os
@@ -31,7 +32,8 @@ async def main(
     
     validArgs = 1
 
-    density = 300
+    density = int(lrbot.config.latex['density'])
+    imgExt = '.' + lrbot.config.latex['format']
     pdfOnly = False
     extraPackages = []
 
@@ -103,7 +105,7 @@ async def main(
     if not pdfOnly:
         # Use ImageMagick to convert the output to one or more images
         sourceOutput = os.path.splitext(source)[0] + '.pdf'
-        imgOutput = os.path.splitext(source)[0] + '.png'
+        imgOutput = os.path.splitext(source)[0] + imgExt
         magick = [
             'magick',
             '-density', str(density),

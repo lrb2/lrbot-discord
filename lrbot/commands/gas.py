@@ -1,4 +1,5 @@
 import discord
+import lrbot.config
 import lrbot.exceptions
 import lrbot.gasprices
 import lrbot.location
@@ -29,7 +30,7 @@ gasTypes = {
     12:         'UNL88',
 }
 
-maxStations = 10
+maxStations = int(lrbot.config.gas['maxStations'])
 
 @commands.command(name = 'gas')
 async def main(ctx: commands.Context, *, arg: str) -> None:
