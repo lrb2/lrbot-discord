@@ -29,6 +29,7 @@ class Reminders(commands.Cog):
         '''
         self.file.seek(0)
         self.reminders = json.load(self.file)
+        self.logger.info('Reminders dict updated from file')
         return
 
     def save(self) -> None:
@@ -38,6 +39,7 @@ class Reminders(commands.Cog):
         self.file.seek(0)
         json.dump(self.reminders, self.file)
         self.file.truncate()
+        self.logger.info('Reminders dict saved to file')
         return
 
     async def runActions(self, reminder: dict) -> None:
@@ -295,6 +297,7 @@ class Reminders(commands.Cog):
                                     not ('regex' in condition and not re.search(condition['regex'], message.content, re.IGNORECASE))
                                 ):
                                     # The condition has been matched
+                                    self.logger.info(f'Condition matched for reminder reminder\nMessage {message.id} by {message.author.name}: {message.content}')
                                     # Update next run even though it hasn't passed yet
                                     reminder = await self.updateNextRun(reminder, skip = True)
                                     self.save()

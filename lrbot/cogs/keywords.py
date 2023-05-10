@@ -19,22 +19,25 @@ class Keywords(commands.Cog):
         self.load()
         self.bot = bot
         self.flm = bot.get_cog('FilterLists')
+        return
     
     def load(self) -> None:
         '''
-        Updates reminders with the latest changes from the file.
+        Updates keywords with the latest changes from the file.
         '''
         self.file.seek(0)
         self.keywords = json.load(self.file)
+        self.logger.info('Keyword dict updated from file')
         return
 
     def save(self) -> None:
         '''
-        Updates the reminders file with the latest changes.
+        Updates the keywords file with the latest changes.
         '''
         self.file.seek(0)
         json.dump(self.keywords, self.file)
         self.file.truncate()
+        self.logger.info('Keyword dict saved to file')
         return
     
     async def runActions(self, keyword: dict, message: discord.Message) -> None:
@@ -49,6 +52,7 @@ class Keywords(commands.Cog):
                 self.logger.error(f'Uncaught exception: {type(error)} {error}\n{tbStr}')
                 await lrbot.response.reactToMessage(message, '💣')
                 continue
+        return
     
     def permittedContext(self, ctx: commands.Context) -> bool:
         return self.flm.permittedContext(ctx)
@@ -83,3 +87,4 @@ class Keywords(commands.Cog):
                     # The condition has been matched; run action
                     await self.runActions(keyword, message)
                     break
+        return
