@@ -90,7 +90,9 @@
                 "leeway": 30,
                 "user": 1234567890,
                 "channels": [1234567890],
-                "regex": "\\btest\\b",
+                "regexes": [
+                    "\\btest\\b"
+                ],
                 "mentions": [
                     1234567890
                 ]

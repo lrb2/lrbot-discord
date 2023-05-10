@@ -294,7 +294,8 @@ class Reminders(commands.Cog):
                                         not message.mentions or
                                         not set(messageMentions) == set(condition['mentions'])
                                     )) and
-                                    not ('regex' in condition and not re.search(condition['regex'], message.content, re.IGNORECASE))
+                                    not ('regex' in condition and not re.search(condition['regex'], message.content, re.IGNORECASE)) and
+                                    not ('regexes' in condition and not all(re.search(regex, message.content, re.IGNORECASE) for regex in condition['regexes']))
                                 ):
                                     # The condition has been matched
                                     self.logger.info(f'Condition matched for reminder reminder\nMessage {message.id} by {message.author.name}: {message.content}')
