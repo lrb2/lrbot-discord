@@ -1,10 +1,6 @@
 import asyncio
-import datetime
-import discord
-import math
 import time
-import lrbot.config
-import lrbot.response
+import logging
 from discord.ext import commands
 from lrbot.cogs.reminders import Reminders
 
@@ -19,10 +15,9 @@ async def main(rm: Reminders) -> None:
             # Update the reminder with the next run timestamps
             reminder = await rm.updateNextRun(reminder)
             reminderModified = True
-    
-    # Remove reminders that will not reoccur (nextRun has passed and was not updated)
     if reminderModified:
-        #rm.reminders[:] = [reminder for reminder in rm.reminders if reminder['nextRun'] > currentTime]
+        # Remove reminders that will not reoccur (nextRun has passed and was not updated)
+        rm.reminders[:] = [reminder for reminder in rm.reminders if reminder['nextRun'] > currentTime]
         rm.save()
 
     # Find next soonest run
@@ -40,6 +35,21 @@ async def main(rm: Reminders) -> None:
 async def run(bot: commands.Bot) -> None:
     rm: Reminders = bot.get_cog('Reminders')
     
+    currentTime = time.time()
+    # On startup, do NOT process reminder reminders that have passed
+    reminderModified = False
+    for reminder in rm.reminders:
+        if 'conditions' in reminder and reminder['nextRun'] <= currentTime:
+            # Update the reminder with the next run timestamps
+            reminder = await rm.updateNextRun(reminder)
+            reminderModified = True
+    if reminderModified:
+        logger = logging.getLogger('discord.lrbot-reminders')
+        logger.warning('One or more reminder reminders were skipped since they have already passed')
+        # Remove reminders that will not reoccur (nextRun has passed and was not updated)
+        rm.reminders[:] = [reminder for reminder in rm.reminders if reminder['nextRun'] > currentTime]
+        rm.save()
+
     # Repeat the main function indefinitely
     while True:
         await main(rm)
