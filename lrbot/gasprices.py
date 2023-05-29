@@ -99,15 +99,14 @@ async def getStations(locations: list[list[str]], gasType: int, strict: bool = T
         elif len(location) == 1:
             locationRequests.append({
                 'str':      location[0],
-                'strict':   False,
+                'strict':   strict,
                 'zip':      True,
                 })
     
-    gasDatas = []
-    
     async with aiohttp.ClientSession(headers = requestHeaders) as session:
-        for locationRequest in locationRequests:           
-            gasDatas.append(await getData(locationRequest['str'], gasType, session))
+        for locationRequest in locationRequests:
+            # Get the first set of data
+            gasDatas = [await getData(locationRequest['str'], gasType, session)]
             
             # Add the location name to the list
             if locationRequest['strict'] or locationRequest['zip']:
@@ -120,6 +119,14 @@ async def getStations(locations: list[list[str]], gasType: int, strict: bool = T
             
             for gasData in gasDatas:
                 for gasStation in gasData['stations']['results']:
+                    # If ZIP code, only include locations in specified ZIP if strict
+                    if (
+                        locationRequest['zip'] and
+                        locationRequest['strict'] and
+                        not gasStation['address']['postalCode'].startswith(locationRequest['str'])
+                    ):
+                        continue
+                    
                     # Format station address
                     address = await correctCaps(gasStation['address']['line1'])
                     if gasStation['address']['line2']:
