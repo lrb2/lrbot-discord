@@ -40,23 +40,23 @@ requestQuery = '''query LocationBySearchTerm($brandId: Int, $cursor: String, $fu
                 prices {
                     cash {
                         nickname
-                        posted_time
+                        postedTime
                         price
                         __typename
                     }
                     credit {
                         nickname
-                        posted_time
+                        postedTime
                         price
                         __typename
                     }
                     discount
-                    fuel_product
+                    fuelProduct
                     __typename
                 }
                 priceUnit
-                ratings_count
-                star_rating
+                ratingsCount
+                starRating
                 __typename
             }
             __typename
@@ -140,7 +140,7 @@ async def getStations(locations: list[list[str]], gasType: int, strict: bool = T
                     
                     price = float()
                     for gasPrice in gasStation['prices']:
-                        if gasPrice['fuel_product'] == gasTypeProducts[gasType]:
+                        if gasPrice['fuelProduct'] == gasTypeProducts[gasType]:
                             if gasPrice['credit']:
                                 price = gasPrice['credit']['price']
                                 break
@@ -153,7 +153,7 @@ async def getStations(locations: list[list[str]], gasType: int, strict: bool = T
                     
                     unit = gasStation['priceUnit']
                     
-                    rating = gasStation['star_rating']
+                    rating = gasStation['starRating']
                     
                     details = {
                         'name': name,
@@ -187,6 +187,10 @@ async def getData(query: str, gasType: int, session: aiohttp.ClientSession, star
     
     request = await session.post(requestURL, json = requestData)
     data = await request.json()
+    
+    requestLogFile = open('gasbuddy.log', 'w')
+    requestLogFile.write(str(data))
+    requestLogFile.close()
     
     return data['data']['locationBySearchTerm']
 
