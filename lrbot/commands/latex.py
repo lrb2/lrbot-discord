@@ -61,7 +61,7 @@ async def main(
     source = None
     if len(args) > validArgs:
         # Text content exists
-        codeIndex = query.index(args[validArgs])
+        codeIndex = query.lower().index(args[validArgs])
         code = query[codeIndex:]
         source = str(message.id) + ".tex"
     else:
