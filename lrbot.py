@@ -12,6 +12,7 @@ from discord.ext import commands
 from lrbot.cogs.filterlists import FilterLists
 from lrbot.cogs.keywords import Keywords
 from lrbot.cogs.reminders import Reminders
+from selenium.common.exceptions import TimeoutException
 
 # Set up logging
 logger = logging.getLogger('discord')
@@ -43,6 +44,7 @@ commandNames = [
     'help',
     'ignore',
     'latex',
+    'radar',
     'reload',
     'remindme'
 ]
@@ -101,8 +103,14 @@ async def logCommandErrors(ctx: commands.Context, cmdError: commands.CommandErro
     else:
         # Uncaught exception
         await lrbot.response.reactToMessage(message, '💣')
+        # Add special reaction for timeout
+        if isinstance(error, (TimeoutError, TimeoutException)):
+            await lrbot.response.reactToMessage(message, '⏱')
         # Log the error
-        tbStr = ''.join(traceback.format_tb(error.__traceback__))
+        try:
+            tbStr = ''.join(traceback.format_tb(error.__traceback__))
+        except:
+            tbStr = 'Traceback retrieval failed'
         moduleLogger.error(f'Uncaught exception: {type(error)} {error}\nMessage {message.id} by {message.author.name}: {message.content}\n{tbStr}')
 
 bot.on_command_error = logCommandErrors

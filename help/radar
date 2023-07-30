@@ -1,0 +1,13 @@
+Gets National Weather Service radar for a location.
+`$radar [options] location`
+The provided location will be entered into the interactive radar's search box, and the first result will be chosen. If no location is provided, a view of the entire continental United States will be shown.
+An animated GIF will be created for the radar at 10-minute intervals over the past 100 minutes.
+Note: This process is slow and will take over 15 seconds. In case the command fails (💣) or if visual anomalies are observed, it may succeed if retried.
+
+**Options**
+`static` Only create a static image of the latest radar instead of a GIF.
+
+**Examples**
+`$radar`
+`$radar 62025`
+`$radar static edwardsville il`
