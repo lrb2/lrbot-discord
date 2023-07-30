@@ -5,3 +5,5 @@ services:
     init: true
     volumes:
       - "$LOCAL_WORKSPACE_FOLDER:/code"
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
