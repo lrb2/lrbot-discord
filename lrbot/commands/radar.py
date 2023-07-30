@@ -46,6 +46,18 @@ async def main(
     # Create Chrome webdriver
     chromeDriver = webdriver.Chrome(options=chromeOptions)
     
+    # Set to the system timezone
+    tz = 'UTC'
+    try:
+        with open('/etc/timezone', 'r') as timezone:
+            systemTZ = timezone.read().strip()
+            tzParams = {'timezoneId': systemTZ}
+            chromeDriver.execute_cdp_cmd('Emulation.setTimezoneOverride', tzParams)
+            tz = systemTZ
+    except:
+        logger = logging.getLogger('discord.lrbot-radar')
+        logger.info(f'Unable to set Chrome webdriver timezone')
+    
     await lrbot.response.reactToMessage(message, 'ok')
     
     if locationStr:
@@ -160,9 +172,10 @@ async def main(
         radarEmbed = discord.Embed(
             title = embedTitle,
             url = finalURL,
-            color = embedColor,
+            color = embedColor
         )
         radarEmbed.set_image(url = 'attachment://radar.gif' if createGif else 'attachment://radar0.png' )
+        radarEmbed.set_footer(text = f'Time zone is {tz}')
         
         await lrbot.response.sendResponse(
             message.channel,
