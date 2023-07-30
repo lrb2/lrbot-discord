@@ -33,7 +33,11 @@ gasTypes = {
 maxStations = int(lrbot.config.gas['maxStations'])
 
 @commands.command(name = 'gas')
-async def main(ctx: commands.Context, *, arg: str) -> None:
+async def main(
+    ctx: commands.Context,
+    *,
+    arg: str = None
+) -> None:
     message = ctx.message
     
     # There must be an argument
