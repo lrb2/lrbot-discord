@@ -3,6 +3,7 @@
 `gas` Returns the lowest known gas prices in and near the provided locations.
 `ignore` Exempts user(s) from being searched for keywords.
 `latex` Runs LaTeX code and returns transparent images or a PDF.
+`radar` Gets National Weather Service radar for a location.
 `remindme` Creates a recurring reminder. Not yet implemented.
 
 Use `$help command` to see help for a specific command.

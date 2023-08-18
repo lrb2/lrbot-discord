@@ -7,6 +7,7 @@ A Discord bot
 - [`$help`](help/help)
 - [`$ignore`](help/ignore)
 - [`$latex`](help/latex)
+- [`$radar`](help/radar)
 - [`$remindme`](help/remindme)
 
 ## Setup
@@ -15,7 +16,7 @@ A Discord bot
 3. Build the Docker image using `docker compose build` (this may require `sudo`). If the image is being rebuilt and the use of cached data is not desired, append `--no-cache` to build it anew.
 4. Create a file `secret-token` that contains the token for your [Discord bot application](https://discord.com/developers/applications).
 5. Create `config/settings.cfg` from [`config/settings-sample.cfg`](config/settings-sample.cfg), changing `owner` to the User ID of a Discord account that should receive any urgent alerts and be able to perform restricted commands.
-5. Run the image in detached mode using `docker compose up -d`.
+5. Run the image in detached mode using `docker compose up -d`. Note that building the image will take a long time (depending on your internet connection) if the cache is not used, since it includes downloading and installing the entirety of TeX Live.
 
 ## Configuration
 See [`config/settings.cfg`](config/settings-sample.cfg) for most configuration options.
