@@ -1,53 +1,67 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "lrbot-discord-dev",
-	"image": "python:3.11-bullseye",
+	
+	"build": {
+		// Use the dev container Dockerfile, based on python:3.11-bookworm
+		"dockerfile": "Dockerfile"
+	},
 
 	"features": {
+		// Enable access to host's Docker Engine from within the dev container
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
 			"version": "latest",
 			"enableNonRootDocker": "true",
 			"moby": "false"
 		},
+		// Install GitHub CLI
 		"ghcr.io/devcontainers/features/github-cli:1": {
 			"installDirectlyFromGitHubRelease": true,
 			"version": "latest"
 		},
+		// Install tzdata and sudo
 		"ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
-			"packages": "tzdata"
+			"packages": "tzdata,sudo"
 		}
 	},
 
-	// Use this environment variable if you need to bind mount your local source code into a new container.
 	"remoteEnv": {
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
 	"mounts": [
+		// Use the host's time settings
 		"source=/etc/timezone,target=/etc/timezone,type=bind,readonly",
-		"source=/etc/localtime,target=/etc/localtime,type=bind,readonly"
+		"source=/etc/localtime,target=/etc/localtime,type=bind,readonly",
+		// Mount the host's gpg-agent. Not ideal, but it's the only way I've gotten gpg to work for commit signing
+		"source=${env:XDG_RUNTIME_DIR}/gnupg/S.gpg-agent,target=/home/vscode/.gnupg-host/S.gpg-agent,type=bind,readonly"
 	],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip install -r requirements.txt",
+	// Install Python dependencies and replace the gpg-agent VS Code brings in with a symlink to the mounted one that actually works
+	"postCreateCommand": "pip install -r requirements.txt && ln -sf ~/.gnupg-host/S.gpg-agent ~/.gnupg/S.gpg-agent",
 
-	// Configure tool-specific properties.
 	"customizations": {
-		// Configure properties specific to VS Code.
 		"vscode": {
-			"settings": {},
+			"settings": {
+				// Default to bash instead of sh for terminals in VS Code
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "bash"
+					}
+				}
+			},
+			// Useful VS Code extensions
 			"extensions": [
 				"ms-azuretools.vscode-docker",
 				"GitHub.vscode-pull-request-github",
 				"eamodio.gitlens",
-				"ms-python.vscode-pylance"
+				"ms-python.vscode-pylance",
+				"wdhongtw.gpg-indicator"
 			]
 		}
-	}
+	},
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	// Use the vscode user (created in Dockerfile) instead of root
+	"remoteUser": "vscode"
 }
