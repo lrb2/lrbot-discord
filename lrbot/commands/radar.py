@@ -15,7 +15,7 @@ from urllib3.exceptions import MaxRetryError
 
 # Set Chrome options
 chromeOptions = webdriver.ChromeOptions()
-chromeOptions.add_argument('--window-size=640,602') # 480p + 122 (104) px NWS header
+chromeOptions.add_argument('--window-size=640,536') # 480p + 56 px NWS header
 chromeOptions.add_argument('--headless')
 chromeOptions.add_argument('--no-sandbox')
 chromeOptions.add_argument('--disable-dev-shm-usage')
@@ -102,8 +102,8 @@ async def main(
             # Expand Alerts
             #chromeDriver.find_element(By.XPATH, '(//span[@class="cmi-radar-menu-agenda-bar-actions-item-label"])[2]').click()
         # Wait a second for the zoom to settle in
-        await asyncio.sleep(1)
-        # Zoom in three times to the location
+        await asyncio.sleep(1.5)
+        # Zoom in two times to the location
         if locationStr:
             zoomInElement = chromeDriver.find_element(By.CLASS_NAME, 'button-zoomin')
             for i in range(2):
@@ -111,12 +111,12 @@ async def main(
         
         # Find the step forward button
         stepForwardButton = chromeDriver.find_element(By.CLASS_NAME, 'button-stepfwd')
-        # Get the 10 frames of radar
-        for i in range(10):
+        # Get the 20 frames of radar
+        for i in range(20):
             # Wait for the radar to load (hopefully)
             await asyncio.sleep(1)
             # Get the image path
-            imgPath = os.path.join(os.sep, imgFolder, f'radar{i}.png')
+            imgPath = os.path.join(os.sep, imgFolder, f'radar{str(i).zfill(2)}.png')
             # Save the screenshot
             chromeDriver.save_screenshot(imgPath)
             # Go to the next frame
@@ -126,7 +126,7 @@ async def main(
                 'magick',
                 imgPath,
                 '-gravity', 'North',
-                '-chop', '0x122',
+                '-chop', '0x56',
                 imgPath
             ]
             await asyncio.wait_for((await asyncio.create_subprocess_exec(*magick)).wait(), 300)
@@ -138,7 +138,7 @@ async def main(
         
         chromeDriver.quit()
         
-        primaryImgPath = os.path.join(os.sep, imgFolder, 'radar0.png')
+        primaryImgPath = os.path.join(os.sep, imgFolder, 'radar00.png')
         sourceImgsPath = os.path.join(os.sep, imgFolder, 'radar*.png')
         colorPalettePath = os.path.join(os.sep, imgFolder, 'palette.gif')
         
@@ -158,7 +158,7 @@ async def main(
             magick = [
                 'magick', 'convert',
                 '-layers', 'OptimizePlus',
-                '-delay', '50',
+                '-delay', '25',
                 sourceImgsPath,
                 primaryImgPath,
                 '-remap', colorPalettePath,
