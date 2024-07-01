@@ -83,14 +83,12 @@ async def main(
             searchInputElement.send_keys(locationStr)
             # Wait a moment
             await asyncio.sleep(0.5)
-            # Wait for at least a second 'search-option-label'-class element to be shown above the Favorites heading
-            WebDriverWait(chromeDriver, timeout=20).until(
-                lambda driver: driver.find_element(
-                    locate_with(By.XPATH, '(//div[@class="search-option-label"])[2]').above(chromeDriver.find_element(By.CLASS_NAME, 'search-option-tip'))
-                )
+            # Wait for a search result to be shown
+            searchResultElement = WebDriverWait(chromeDriver, timeout=20).until(
+                lambda driver: driver.find_element(By.XPATH, '(//div[@class="cmi-radar-menu-panel-content"]/div[contains(@class, "search-option-result")]/div[contains(@class, "search-option-label")])[1]')
             )
             # Choose the first result
-            chromeDriver.find_element(By.XPATH, '(//div[@class="search-option-label"])[2]').click()
+            searchResultElement.click()
         # Open the view settings
         #chromeDriver.find_element(By.XPATH, '//span[@class="cmi-radar-menu-agenda-bar-actions-item-icon"]').click()
         # Show alerts if static image
