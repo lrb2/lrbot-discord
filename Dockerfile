@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-## 1. Start with Python in Debian 11
-FROM python:3.11-bullseye
+## 1. Start with Python in Debian 12
+FROM python:3.11-bookworm
 ## 2. Install TeX Live
 #    a. Work in the /tmp folder
 WORKDIR /tmp
@@ -30,8 +30,8 @@ WORKDIR /tmp
 #    b. Get the latest version number and save it to a file
 RUN curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json | grep -Po '\d+\.\d+\.\d+\.\d+' | head -1 > chrome-version
 #    c. Download the chrome and chromedriver binaries
-RUN wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/`cat chrome-version`/linux64/chrome-linux64.zip
-RUN wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/`cat chrome-version`/linux64/chromedriver-linux64.zip
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/`cat chrome-version`/linux64/chrome-linux64.zip
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/`cat chrome-version`/linux64/chromedriver-linux64.zip
 #    d. Unzip archives
 RUN unzip chrome-linux64.zip
 RUN unzip chromedriver-linux64.zip
