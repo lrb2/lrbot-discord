@@ -2,6 +2,7 @@
 __pycache__/
 secret-*
 *.log
+*.old
 config/settings.cfg
 config/keywords.json
 config/reminders.json
