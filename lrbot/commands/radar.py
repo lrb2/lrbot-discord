@@ -62,10 +62,10 @@ async def main(
     
     if locationStr:
         # Go to National Weather Service Radar page, with Hazards set to 50% transparency and National Radar set to 100% opacity
-        chromeDriver.get('https://radar.weather.gov/?settings=v1_eyJhZ2VuZGEiOnsiaWQiOiJsb2NhbCIsImNlbnRlciI6Wy05NS4wMSwzNy4wMl0sImxvY2F0aW9uIjpudWxsLCJ6b29tIjo0LCJmaWx0ZXIiOm51bGx9LCJhbmltYXRpbmciOmZhbHNlLCJiYXNlIjoic3RhbmRhcmQiLCJhcnRjYyI6ZmFsc2UsImNvdW50eSI6ZmFsc2UsImN3YSI6ZmFsc2UsInJmYyI6ZmFsc2UsInN0YXRlIjpmYWxzZSwibWVudSI6dHJ1ZSwic2hvcnRGdXNlZE9ubHkiOnRydWUsIm9wYWNpdHkiOnsiYWxlcnRzIjowLjUsImxvY2FsIjowLjYsImxvY2FsU3RhdGlvbnMiOjAuOCwibmF0aW9uYWwiOjF9fQ%3D%3D')
+        chromeDriver.get('https://radar.weather.gov/?settings=v1_eyJhZ2VuZGEiOnsiaWQiOiJ3ZWF0aGVyIiwiY2VudGVyIjpbLTk1LDM3XSwibG9jYXRpb24iOm51bGwsInpvb20iOjMsImxheWVyIjoiYnJlZl9xY2QifSwiYW5pbWF0aW5nIjpmYWxzZSwiYmFzZSI6InN0YW5kYXJkIiwiYXJ0Y2MiOmZhbHNlLCJjb3VudHkiOmZhbHNlLCJjd2EiOmZhbHNlLCJyZmMiOmZhbHNlLCJzdGF0ZSI6ZmFsc2UsIm1lbnUiOnRydWUsInNob3J0RnVzZWRPbmx5IjpmYWxzZSwib3BhY2l0eSI6eyJhbGVydHMiOjAuNSwibG9jYWwiOjAuNiwibG9jYWxTdGF0aW9ucyI6MC44LCJuYXRpb25hbCI6MX19')
     else:
         # Go to National Weather Service Radar page, showing National radar
-        chromeDriver.get('https://radar.weather.gov/?settings=v1_eyJhZ2VuZGEiOnsiaWQiOm51bGwsImNlbnRlciI6Wy05NS4wMSwzNy4wMl0sImxvY2F0aW9uIjpudWxsLCJ6b29tIjo0fSwiYW5pbWF0aW5nIjpmYWxzZSwiYmFzZSI6InN0YW5kYXJkIiwiYXJ0Y2MiOmZhbHNlLCJjb3VudHkiOmZhbHNlLCJjd2EiOmZhbHNlLCJyZmMiOmZhbHNlLCJzdGF0ZSI6ZmFsc2UsIm1lbnUiOnRydWUsInNob3J0RnVzZWRPbmx5IjpmYWxzZSwib3BhY2l0eSI6eyJhbGVydHMiOjAuOCwibG9jYWwiOjAuNiwibG9jYWxTdGF0aW9ucyI6MC44LCJuYXRpb25hbCI6MC42fX0%3D')
+        chromeDriver.get('https://radar.weather.gov/?settings=v1_eyJhZ2VuZGEiOnsiaWQiOiJuYXRpb25hbCIsImNlbnRlciI6Wy05NSwzN10sImxvY2F0aW9uIjpudWxsLCJ6b29tIjozLCJsYXllciI6ImJyZWZfcWNkIn0sImFuaW1hdGluZyI6ZmFsc2UsImJhc2UiOiJzdGFuZGFyZCIsImFydGNjIjpmYWxzZSwiY291bnR5IjpmYWxzZSwiY3dhIjpmYWxzZSwicmZjIjpmYWxzZSwic3RhdGUiOmZhbHNlLCJtZW51Ijp0cnVlLCJzaG9ydEZ1c2VkT25seSI6dHJ1ZSwib3BhY2l0eSI6eyJhbGVydHMiOjAuNSwibG9jYWwiOjAuNiwibG9jYWxTdGF0aW9ucyI6MC44LCJuYXRpb25hbCI6MX19')
     
     async with message.channel.typing():
         WebDriverWait(chromeDriver, timeout=10).until(
@@ -74,18 +74,19 @@ async def main(
         
         if locationStr:
             # Open the search box
-            #chromeDriver.find_element(By.CLASS_NAME, 'search-label').click()
+            chromeDriver.find_element(By.CLASS_NAME, 'search-icon').click()
             # Find the search input
             searchInputElement = chromeDriver.find_element(By.CLASS_NAME, 'search-input')
             # Activate the search input
-            searchInputElement.click()
+            #searchInputElement.click()
             # Enter the search term
             searchInputElement.send_keys(locationStr)
             # Wait a moment
             await asyncio.sleep(0.5)
             # Wait for a search result to be shown
             searchResultElement = WebDriverWait(chromeDriver, timeout=20).until(
-                lambda driver: driver.find_element(By.XPATH, '(//div[@class="cmi-radar-menu-panel-content"]/div[contains(@class, "search-option-result")]/div[contains(@class, "search-option-label")])[1]')
+                lambda driver: driver.find_element(By.XPATH, '(//div[contains(@class, "search-option-result")]/div[contains(@class, "search-option-label")])[1]')
+                #lambda driver: driver.find_element(By.XPATH, '(//div[@class="cmi-radar-menu-panel-content"]/div[contains(@class, "search-option-result")]/div[contains(@class, "search-option-label")])[1]')
             )
             # Choose the first result
             searchResultElement.click()
