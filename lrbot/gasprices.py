@@ -14,13 +14,13 @@ gasTypeProducts = {
 requestURL = 'https://www.gasbuddy.com/graphql'
 requestOperationName = 'LocationBySearchTerm'
 requestQuery = '''query LocationBySearchTerm($brandId: Int, $cursor: String, $fuel: Int, $lat: Float, $lng: Float, $maxAge: Int, $search: String) {
-    locationBySearchTerm(lat: $lat, lng: $lng, search: $search) {
+    locationBySearchTerm(lat: $lat, lng: $lng, search: $search, priority: "locality") {
         countryCode
         displayName
         latitude
         longitude
         regionCode
-        stations(brandId: $brandId, cursor: $cursor, fuel: $fuel, maxAge: $maxAge) {
+        stations(brandId: $brandId, cursor: $cursor, fuel: $fuel, maxAge: $maxAge, priority: "locality") {
             count
             cursor {
                 next
@@ -64,9 +64,13 @@ requestQuery = '''query LocationBySearchTerm($brandId: Int, $cursor: String, $fu
     }
 }'''
 requestHeaders = {
+    'apollo-require-preflight': 'true',
     'cache-control': 'no-cache',
+    'content-type': 'application/json',
+    'gbcsrf': '1.AX4G7VysTDo449Fp',
     'origin': 'https://www.gasbuddy.com',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+    'referer': 'https://www.gasbuddy.com/home',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
 }
 
 async def getStations(locations: list[list[str]], gasType: int, strict: bool = True) -> dict[str, list[dict[str]]]:
